@@ -1,0 +1,5 @@
+# Open Loops runtime state
+.openloops/
+
+# Claude Code local files and worktrees
+.claude/
