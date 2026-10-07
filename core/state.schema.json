@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Open Loops state.json",
+  "description": "The Orchestrator's state file in the home directory. It is the only truth between Cycles. Keys that start with 'ol-' are Worker records; the other keys are dedup maps.",
+  "type": "object",
+  "properties": {
+    "chain_stalled_notified": {
+      "description": "Dedup map for chain-stall messages: Gated Task id -> id of the Blocked upstream Task.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "alerts": {
+      "description": "One entry per Slot whose tools are failing. One system_alert per outage; the entry is removed on recovery.",
+      "type": "object",
+      "propertyNames": { "enum": ["tracker", "host", "runtime", "notifier", "review"] },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["since"],
+        "properties": {
+          "since": { "type": "string", "format": "date-time" },
+          "message": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "patternProperties": {
+    "^ol-[a-z0-9][a-z0-9-]*$": { "$ref": "#/$defs/worker" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "worker": {
+      "description": "One record per Task that has or had a Worker and is not yet Done.",
+      "type": "object",
+      "required": ["task_id", "spec", "started", "status"],
+      "properties": {
+        "task_id": { "description": "The Tracker's id for the Task.", "type": "string" },
+        "spec": { "description": "Path of the Spec file, or 'task-body' when the Task body is the Spec.", "type": "string" },
+        "workspace": { "description": "Absolute path of the Workspace.", "type": "string" },
+        "runtime_ids": {
+          "description": "The ids that runtime.md names for this Worker. Removed when the Worker is stopped.",
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        },
+        "started": { "description": "When the Worker was spawned.", "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["working", "in_review", "blocked"] },
+        "review_state": {
+          "type": "object",
+          "properties": {
+            "last_comment_id": { "description": "Last Review comment id that triggered a Respawn; null = none seen.", "type": ["string", "null"] }
+          },
+          "additionalProperties": false
+        },
+        "pending_prompt": { "description": "First 60 characters of an Input Request the Owner was told about.", "type": ["string", "null"] },
+        "gap_fill_done": { "description": "Absent = not applicable or not triggered; 'pending' = re-prompt sent; true = done.", "enum": [true, "pending"] },
+        "blocked_notified": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    }
+  }
+}
