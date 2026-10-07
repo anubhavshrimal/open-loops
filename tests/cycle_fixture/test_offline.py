@@ -68,6 +68,8 @@ class SandboxTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
         self.sb = run_fixture.build_sandbox(Path(self.tmp.name), "sonnet", "sonnet", "auto")
+        run_fixture.write_spec(self.sb, "hello-file", "Add hello.txt", "Add `hello.txt`.", "`hello.txt` exists.")
+        run_fixture.write_task(self.sb, "hello-file", "Add hello.txt", "Ready", comments=[("owner", "ACTION: go.")])
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -85,10 +87,44 @@ class SandboxTest(unittest.TestCase):
         self.assertIn(str(REPO / "core/orchestrator.md"), command)
         self.assertIn(f"Home directory: {self.sb.home}", command)
 
-    def test_task_starts_ready_and_names_its_spec(self):
-        self.assertEqual(run_fixture.task_state(self.sb), "Ready")
-        self.assertIn(f"Spec: {self.sb.specs}/hello-file.md", self.sb.task_file.read_text())
-        self.assertEqual(run_fixture.task_comments(self.sb), [])
+    def test_task_file_round_trips_state_spec_and_comments(self):
+        self.assertEqual(run_fixture.task_state(self.sb, "hello-file"), "Ready")
+        self.assertIn(f"Spec: {self.sb.specs}/hello-file.md", self.sb.task_file("hello-file").read_text())
+        comments = run_fixture.task_comments(self.sb, "hello-file")
+        self.assertEqual(len(comments), 1)
+        self.assertRegex(comments[0], r"^c1 \| .+ \| owner\nACTION: go\.$")
+
+    def test_spec_has_no_placeholders_and_lists_dependencies(self):
+        spec = run_fixture.write_spec(self.sb, "b", "B", "Add b.", "b exists.", depends_on=["a"], spec_status="draft")
+        text = spec.read_text()
+        self.assertIn('depends_on: ["a"]', text)
+        self.assertIn('spec_status: "draft"', text)
+        self.assertNotRegex(text, r"\{\{[A-Z_]+\}\}")
+
+    def test_task_branch_is_a_worktree_with_one_commit(self):
+        sha = run_fixture.make_task_branch(self.sb, "hello-file", "hello.txt", "Hi.")
+        log = run_fixture.git("log", "--format=%H", "main..ol-hello-file", cwd=self.sb.project).stdout.split()
+        self.assertEqual(log, [sha])
+        self.assertTrue((self.sb.worktree("hello-file") / "hello.txt").exists())
+
+    def test_state_written_for_a_mid_loop_scenario_validates(self):
+        record = run_fixture.worker_record(self.sb, "hello-file", "blocked", blocked_notified=True)
+        run_fixture.write_state(self.sb, {"ol-hello-file": record})
+        self.assertEqual(run_fixture.state_errors(self.sb), [])
+
+    def test_owner_moves_a_task(self):
+        run_fixture.set_task_state(self.sb, "hello-file", "Done")
+        self.assertEqual(run_fixture.task_state(self.sb, "hello-file"), "Done")
+        self.assertEqual(len(run_fixture.task_comments(self.sb, "hello-file")), 1)
+
+    def test_every_scenario_has_unique_worker_slugs(self):
+        slugs = [slug for _, names in run_fixture.SCENARIOS.values() for slug in names]
+        self.assertEqual(len(slugs), len(set(slugs)))
+        self.assertEqual(len(run_fixture.SCENARIOS), 9)
+
+    def test_notifications_parse_event_names(self):
+        self.sb.notifier_log.write_text("2026-10-06T22:31:04-07:00 spawned Picked up\n2026-10-06T22:32:04-07:00 done Done\n")
+        self.assertEqual(run_fixture.events(self.sb), ["spawned", "done"])
 
     def test_project_main_matches_the_local_origin(self):
         local = run_fixture.git("rev-parse", "main", cwd=self.sb.project).stdout
@@ -104,8 +140,10 @@ class ExplorationSandboxTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
         self.sb = run_fixture.build_sandbox(
-            Path(self.tmp.name), "sonnet", "sonnet", "auto", run_fixture.SCENARIOS["exploration"]
+            Path(self.tmp.name), "sonnet", "sonnet", "auto", project_files=("check.sh", "fib.py", "measure.sh")
         )
+        run_fixture.write_fixture_spec(self.sb, "shorten-fib")
+        run_fixture.write_task(self.sb, "shorten-fib", "Shorten fib.py", "Ready")
 
     def tearDown(self):
         self.tmp.cleanup()
@@ -117,9 +155,9 @@ class ExplorationSandboxTest(unittest.TestCase):
         self.assertIn(f"--add-dir {self.sb.home}", (self.sb.home / "runtime.md").read_text())
 
     def test_task_starts_ready_and_names_an_exploration_spec(self):
-        self.assertEqual(run_fixture.task_state(self.sb), "Ready")
+        self.assertEqual(run_fixture.task_state(self.sb, "shorten-fib"), "Ready")
         spec = (self.sb.specs / "shorten-fib.md").read_text()
-        self.assertIn(f"Spec: {self.sb.specs}/shorten-fib.md", self.sb.task_file.read_text())
+        self.assertIn(f"Spec: {self.sb.specs}/shorten-fib.md", self.sb.task_file("shorten-fib").read_text())
         self.assertIn("## Hypothesis", spec)
         self.assertIn('agent: "auto-researcher"', spec)
         self.assertIn("10 minutes", spec)
@@ -130,10 +168,10 @@ class ExplorationSandboxTest(unittest.TestCase):
         self.assertRegex(result.stdout, r"^lines: [0-9]+$")
 
     def test_results_rows_needs_a_tab_separated_header(self):
-        self.sb.state_path.mkdir(parents=True)
-        self.assertIsNone(run_fixture.results_rows(self.sb))
-        (self.sb.state_path / "results.tsv").write_text("experiment_id\tmetric_value\n001\t21\n")
-        self.assertEqual(run_fixture.results_rows(self.sb), ["001\t21"])
+        self.sb.state_path("shorten-fib").mkdir(parents=True)
+        self.assertIsNone(run_fixture.results_rows(self.sb, "shorten-fib"))
+        (self.sb.state_path("shorten-fib") / "results.tsv").write_text("experiment_id\tmetric_value\n001\t21\n")
+        self.assertEqual(run_fixture.results_rows(self.sb, "shorten-fib"), ["001\t21"])
 
 
 class SpecTemplatesTest(unittest.TestCase):

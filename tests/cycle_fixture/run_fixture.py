@@ -1,25 +1,36 @@
 #!/usr/bin/env python3
-"""Cycle fixture: run real Open Loops Cycles against a sandbox with the local fallbacks.
+"""Cycle fixture: run real Open Loops Cycles against sandboxes with the local fallbacks.
 
-Scenario 1 (`build`): a Ready Task with a trivial Build Spec is spawned as the tmux
-Worker `ol-hello-file` (a Herdr Worker with --runtime herdr), gets a state.json record and a `spawned` Notifier line, reaches
-In Review with a commit on its branch and a Tracker comment that names the branch,
-and its Worker is closed.
+Each scenario builds its own sandbox, sets up Task files (and, where a scenario starts
+mid-loop, the branch, Workspace and state.json that earlier Cycles would have left), runs
+Cycles, acts as the Owner between Cycles where the scenario says so, and checks the results:
 
-Scenario 2 (`exploration`): a Ready Task with a tiny Exploration Spec (10-minute time
-budget) is spawned as `ol-shorten-fib` under the Exploration Worker agent, and reaches
-In Review with a results file and the experiments comparator in its state path.
+1. build: a Ready Task reaches In Review on a branch, and its Worker is closed.
+2. exploration: a Ready Task with a tiny Exploration Spec is spawned under the Exploration
+   Worker agent and reaches In Review with a results file and the experiments comparator.
+3. gated: a Gated Task stays Ready with no Worker until its upstream Task is Done, then spawns.
+4. parent: a parent Task with two child Tasks: only the children spawn, and the gap-fill
+   prompt fills the dependent Spec before the first child's completion is accepted.
+5. follow-up: a Follow-up comment on an In Review Task causes a Respawn in the same Workspace.
+6. merge: a Cycle with nothing to do sends nothing; after the Owner merges the Task branch
+   into main, the next Cycle moves the Task to Done.
+7. backlog: a Task in Backlog is never touched.
+8. blocked: a Blocked Task stays silent while its blocker is there; once it clears, the Task
+   goes back to Ready with an `unblocked` message.
+9. tool-failure: an unreadable Tracker gives one `system_alert` and no state change, no
+   second alert on the next Cycle, and `system_recovered` once it is readable again.
 
-The sandbox is a temp directory with a project repo and its local bare origin, a
-Markdown Tracker directory, a Spec directory, and a home directory with the five
-example notes files filled in for the sandbox. Each Cycle runs the command in the
-"How a Cycle starts" block of the example host.md.
+A sandbox is a temp directory with a project repo and its local bare origin, a Markdown
+Tracker directory, a Spec directory, and a home directory with the five example notes files
+filled in for the sandbox. Each Cycle runs the command in the "How a Cycle starts" block of
+the example host.md.
 
 The fixture uses a real agent and costs tokens. Run it on demand, not on each commit.
-It checks only files, git refs and tmux sessions, never the agent's wording.
+It checks only files, git refs and the Runtime's Worker list, never the agent's wording.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -29,16 +40,14 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
-from typing import Callable
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 sys.path.insert(0, str(HERE))
 
 from schema_check import schema_errors  # noqa: E402
-
-HELLO_LINE = "Hello from Open Loops."
 
 NOTES_FILES = {
     "tracker.md": REPO / "adapters/tracker/markdown.md",
@@ -48,23 +57,16 @@ NOTES_FILES = {
     "review.md": REPO / "adapters/review/local-branch.md",
 }
 
+RUNTIMES = ("tmux", "herdr")
+HERDR_SESSION = "openloops-fixture"
 
-@dataclass
-class Scenario:
-    number: int
-    slug: str
-    project_files: tuple  # fixture files copied into the project repo before the first commit
-    result_checks: Callable  # (sandbox, checks): the scenario's own end checks
-    agent: str = ""  # the Spec's agent: field; the Worker must start with --agent <agent>
 
-    @property
-    def worker(self):
-        return f"ol-{self.slug}"
+def notes_files(runtime):
+    return {**NOTES_FILES, "runtime.md": REPO / f"adapters/runtime/{runtime}.md"}
 
 
 @dataclass
 class Sandbox:
-    scenario: Scenario
     root: Path
     origin: Path
     project: Path
@@ -72,14 +74,19 @@ class Sandbox:
     specs: Path
     home: Path
     notifier_log: Path
+    values: dict
 
-    @property
-    def task_file(self):
-        return self.tracker / f"{self.scenario.slug}.md"
+    def task_file(self, task_id):
+        return self.tracker / f"{task_id}.md"
 
-    @property
-    def state_path(self):
-        return self.project / ".openloops" / self.scenario.slug
+    def spec_file(self, slug):
+        return self.specs / f"{slug}.md"
+
+    def worktree(self, slug):
+        return self.project / ".openloops" / "worktrees" / slug
+
+    def state_path(self, slug):
+        return self.project / ".openloops" / slug
 
     @property
     def state_file(self):
@@ -99,18 +106,13 @@ def git(*args, cwd=None, check=True):
     return subprocess.run(["git", *args], cwd=cwd, check=check, capture_output=True, text=True)
 
 
-RUNTIMES = ("tmux", "herdr")
-HERDR_SESSION = "openloops-fixture"
+def now():
+    return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def notes_files(runtime):
-    return {**NOTES_FILES, "runtime.md": REPO / f"adapters/runtime/{runtime}.md"}
-
-
-def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scenario=None, runtime="tmux"):
-    scenario = scenario or SCENARIOS["build"]
+def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="tmux", project_files=("check.sh",)):
+    """A sandbox with the project repo, its origin, the notes files and the core agents, and no Tasks yet."""
     sb = Sandbox(
-        scenario=scenario,
         root=root,
         origin=root / "origin.git",
         project=root / "project",
@@ -118,6 +120,7 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scena
         specs=root / "specs",
         home=root / "home",
         notifier_log=root / "home" / "notifications.log",
+        values={},
     )
     for d in (sb.project, sb.tracker, sb.specs, sb.home):
         d.mkdir(parents=True)
@@ -127,7 +130,7 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scena
     git("config", "--local", "user.email", "fixture@example.invalid", cwd=sb.project)
     (sb.project / "README.md").write_text("# Fixture project\n\nA sandbox repo for the Open Loops Cycle fixture.\n")
     (sb.project / ".gitignore").write_text(".openloops/\n")
-    for name in scenario.project_files:
+    for name in project_files:
         shutil.copy(HERE / "fixtures" / name, sb.project / name)
     git("add", ".", cwd=sb.project)
     git("commit", "-q", "-m", "Initial commit", cwd=sb.project)
@@ -136,7 +139,7 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scena
     git("fetch", "-q", "origin", cwd=sb.project)
     git("branch", "-q", "--set-upstream-to=origin/main", "main", cwd=sb.project)
 
-    values = {
+    sb.values.update({
         "TRACKER_DIR": str(sb.tracker),
         "SPEC_DIR": str(sb.specs),
         "HOME_DIR": str(sb.home),
@@ -148,18 +151,96 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scena
         "PROJECT_REPO": str(sb.project),
         "BUILD_TEST_COMMAND": "sh check.sh",
         "EXTRA_DIRS": f"--add-dir {sb.tracker} --add-dir {sb.home} --add-dir {sb.specs}",
-    }
+    })
     for name, source in notes_files(runtime).items():
-        (sb.home / name).write_text(render(source.read_text(), values))
+        (sb.home / name).write_text(render(source.read_text(), sb.values))
     # Setup step: install the core agents where the Worker's --add-dir of the home directory finds them.
     agents = sb.home / ".claude" / "agents"
     agents.mkdir(parents=True)
     for agent in sorted((REPO / "core/agents").glob("*.md")):
         shutil.copy(agent, agents / agent.name)
-    slug = scenario.slug
-    sb.task_file.write_text(render((HERE / f"fixtures/{slug}.task.md").read_text(), values))
-    (sb.specs / f"{slug}.md").write_text(render((HERE / f"fixtures/{slug}.spec.md").read_text(), values))
     return sb
+
+
+def write_spec(sb, slug, title, what, acceptance, depends_on=(), spec_status="ready"):
+    """A small Build Spec made from fixtures/build.spec.md."""
+    values = dict(
+        sb.values,
+        TITLE=title,
+        TASK_ID=slug,
+        WHAT=what,
+        ACCEPTANCE=acceptance,
+        DEPENDS_ON=", ".join(f'"{d}"' for d in depends_on),
+        SPEC_STATUS=spec_status,
+    )
+    sb.spec_file(slug).write_text(render((HERE / "fixtures/build.spec.md").read_text(), values))
+    return sb.spec_file(slug)
+
+
+def write_fixture_spec(sb, slug):
+    """A Spec kept as its own file, fixtures/<slug>.spec.md."""
+    sb.spec_file(slug).write_text(render((HERE / f"fixtures/{slug}.spec.md").read_text(), sb.values))
+    return sb.spec_file(slug)
+
+
+def write_task(sb, task_id, title, state, spec=True, parent="", depends_on=(), body="", comments=()):
+    """A Markdown Tracker Task file. comments: (author, text) pairs, numbered c1, c2, ..."""
+    deps = "[" + ", ".join(depends_on) + "]"
+    lines = ["---", f"id: {task_id}", f"title: {title}", f"state: {state}", f'parent: "{parent}"', f"depends_on: {deps}", "---", ""]
+    if spec:
+        lines += [f"Spec: {sb.spec_file(task_id)}", ""]
+    if body:
+        lines += [body, ""]
+    lines.append("## Comments")
+    for number, (author, text) in enumerate(comments, 1):
+        lines += ["", f"### c{number} | {now()} | {author}", text]
+    sb.task_file(task_id).write_text("\n".join(lines) + "\n")
+
+
+def set_task_state(sb, task_id, state):
+    """The Owner moves a Task: edit its state: line, as tracker.md says."""
+    path = sb.task_file(task_id)
+    path.write_text(re.sub(r"^state: .*$", f"state: {state}", path.read_text(), count=1, flags=re.M))
+
+
+def make_task_branch(sb, slug, filename, line):
+    """The Workspace and branch that a Worker leaves at In Review: a worktree on ol-<slug> with one commit."""
+    wt = sb.worktree(slug)
+    git("worktree", "add", "-q", "-b", f"ol-{slug}", str(wt), "main", cwd=sb.project)
+    git("branch", "-q", "--set-upstream-to=origin/main", cwd=wt)
+    (wt / filename).write_text(line + "\n")
+    git("add", filename, cwd=wt)
+    git("commit", "-q", "-m", f"Add {filename}", cwd=wt)
+    sb.state_path(slug).mkdir(parents=True, exist_ok=True)
+    (sb.state_path(slug) / "implementation-notes.html").write_text(f"<html><body><p>Added {filename}.</p></body></html>\n")
+    return git("rev-parse", "HEAD", cwd=wt).stdout.strip()
+
+
+def pr_comment(slug, sha, summary):
+    return f"{summary}\n\nBranch: ol-{slug}\nCommit: {sha}\nChecks: pass"
+
+
+def worktrees_and_branches(sb):
+    """The project's worktrees (path and branch, not HEAD: a Worker's commits move it) and its branches."""
+    out = git("worktree", "list", "--porcelain", cwd=sb.project).stdout
+    trees = sorted(line for line in out.splitlines() if line.startswith(("worktree ", "branch ")))
+    branches = git("branch", "--format=%(refname:short)", cwd=sb.project).stdout.split()
+    return trees, sorted(branches)
+
+
+def write_state(sb, state):
+    sb.state_file.write_text(json.dumps(state, indent=2) + "\n")
+
+
+def worker_record(sb, slug, status, **extra):
+    return {
+        "task_id": slug,
+        "spec": str(sb.spec_file(slug)),
+        "workspace": str(sb.worktree(slug)),
+        "started": now(),
+        "status": status,
+        **extra,
+    }
 
 
 def cycle_command(host_md):
@@ -169,8 +250,8 @@ def cycle_command(host_md):
     return " ".join(line.rstrip("\\").strip() for line in block.strip().splitlines())
 
 
-def task_frontmatter(sb):
-    text = sb.task_file.read_text()
+def task_frontmatter(sb, task_id):
+    text = sb.task_file(task_id).read_text()
     head = text.split("---", 2)[1]
     fields = {}
     for line in head.strip().splitlines():
@@ -179,22 +260,24 @@ def task_frontmatter(sb):
     return fields
 
 
-def task_state(sb):
-    return task_frontmatter(sb).get("state", "")
+def task_state(sb, task_id):
+    return task_frontmatter(sb, task_id).get("state", "")
 
 
-def task_comments(sb):
-    text = sb.task_file.read_text()
+def task_comments(sb, task_id):
+    text = sb.task_file(task_id).read_text()
     if "## Comments" not in text:
         return []
     body = text.split("## Comments", 1)[1]
     return [c.strip() for c in re.split(r"^### ", body, flags=re.M)[1:]]
 
 
+def file_digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
 def tmux_sessions():
-    out = subprocess.run(
-        ["tmux", "list-sessions", "-F", "#{session_name}"], capture_output=True, text=True
-    )
+    out = subprocess.run(["tmux", "list-sessions", "-F", "#{session_name}"], capture_output=True, text=True)
     return out.stdout.split() if out.returncode == 0 else []
 
 
@@ -223,17 +306,36 @@ def workers(runtime):
     return tmux_sessions()
 
 
+def herdr_agent(worker):
+    return (herdr_json("agent", "get", worker) or {}).get("agent", {})
+
+
 def pane_command(runtime, worker):
     """The command line that started the Worker's agent."""
     if runtime == "herdr":
-        agent = herdr_json("agent", "get", worker) or {}
-        pane = agent.get("agent", {}).get("pane_id", "")
+        pane = herdr_agent(worker).get("pane_id", "")
         info = herdr_json("pane", "process-info", "--pane", pane) or {}
         return " ".join(p.get("cmdline", "") for p in info.get("process_info", {}).get("foreground_processes", []))
-    out = subprocess.run(
-        ["tmux", "list-panes", "-t", worker, "-F", "#{pane_start_command}"], capture_output=True, text=True
-    )
+    out = subprocess.run(["tmux", "list-panes", "-t", worker, "-F", "#{pane_start_command}"], capture_output=True, text=True)
     return out.stdout.strip() if out.returncode == 0 else ""
+
+
+def worker_directory(runtime, worker):
+    """The directory the Worker's agent started in."""
+    if runtime == "herdr":
+        return herdr_agent(worker).get("cwd", "")
+    out = subprocess.run(["tmux", "display-message", "-p", "-t", worker, "#{session_path}"], capture_output=True, text=True)
+    return out.stdout.strip()
+
+
+def stop_workers(runtime, names):
+    for name in names:
+        if runtime == "herdr":
+            workspace = herdr_agent(name).get("workspace_id")
+            if workspace:
+                subprocess.run(["herdr", "workspace", "close", workspace], capture_output=True)
+        else:
+            subprocess.run(["tmux", "kill-session", "-t", name], capture_output=True)
 
 
 def start_herdr_session():
@@ -269,80 +371,51 @@ def start_herdr_session():
     return None if herdr_agents() is not None else f"the Herdr session {HERDR_SESSION} does not answer"
 
 
-def stop_hint(runtime, worker):
-    return f"herdr session stop {HERDR_SESSION}" if runtime == "herdr" else f"tmux kill-session -t {worker}"
+def stop_hint(runtime):
+    return f"herdr session stop {HERDR_SESSION}" if runtime == "herdr" else "tmux kill-session -t <name>"
 
 
-def attach_hint(runtime, worker):
-    return f"herdr session attach {HERDR_SESSION}" if runtime == "herdr" else f"tmux attach -t {worker}"
+def attach_hint(runtime):
+    return f"herdr session attach {HERDR_SESSION}" if runtime == "herdr" else "tmux attach -t <name>"
 
 
 def read_state(sb):
-    if not sb.state_file.exists():
-        return None
-    return json.loads(sb.state_file.read_text())
+    """state.json as a dict; {} if it does not exist."""
+    return json.loads(sb.state_file.read_text()) if sb.state_file.exists() else {}
 
 
 def state_errors(sb):
-    state = read_state(sb)
-    if state is None:
+    if not sb.state_file.exists():
         return ["state.json does not exist"]
     schema = json.loads((REPO / "core/state.schema.json").read_text())
-    return schema_errors(state, schema)
+    return schema_errors(read_state(sb), schema)
 
 
-def run_cycle(sb, number, command, cycle_timeout):
-    print(f"[fixture] Cycle {number}: start")
-    started = time.time()
-    try:
-        code = subprocess.run(command, shell=True, cwd=sb.home, timeout=cycle_timeout).returncode
-    except subprocess.TimeoutExpired:
-        code = "timeout"
-    print(f"[fixture] Cycle {number}: exit {code} after {time.time() - started:.0f}s")
+def notifications(sb):
+    """The Notifier log as (timestamp, event) pairs, oldest first."""
+    if not sb.notifier_log.exists():
+        return []
+    return [tuple(line.split(" ", 2)[:2]) for line in sb.notifier_log.read_text().splitlines() if " " in line]
 
 
-class Checks:
-    def __init__(self):
-        self.results = []
-
-    def check(self, name, ok, detail=""):
-        self.results.append((name, bool(ok), detail))
-        print(f"[fixture] {'PASS' if ok else 'FAIL'}: {name}{' (' + detail + ')' if detail and not ok else ''}")
-
-    @property
-    def passed(self):
-        return all(ok for _, ok, _ in self.results)
+def events(sb):
+    return [event for _, event in notifications(sb)]
 
 
-def spawn_checks(sb, checks, runtime):
-    worker = sb.scenario.worker
-    state = read_state(sb) or {}
-    live = workers(runtime)
-    checks.check(f"{runtime} Worker {worker} exists after Cycle 1", worker in live, str(live))
-    checks.check(f"state.json has a record for {worker}", worker in state, str(list(state)))
-    if sb.scenario.agent:
-        command = pane_command(runtime, worker)
-        checks.check(
-            f"Worker {worker} started with --agent {sb.scenario.agent}",
-            f"--agent {sb.scenario.agent}" in command,
-            command[:200],
-        )
-    errors = state_errors(sb)
-    checks.check("state.json validates against core/state.schema.json", not errors, "; ".join(errors))
-    checks.check(
-        "Task is Working (or already In Review)", task_state(sb) in ("Working", "In Review"), task_state(sb)
-    )
-    log = sb.notifier_log.read_text() if sb.notifier_log.exists() else ""
-    checks.check(
-        "Notifier log has a spawned line",
-        re.search(r"^\S+ spawned ", log, re.M),
-        log.strip()[-200:],
-    )
+def first_event_time(sb, event):
+    """When the first `event` line was written, as epoch seconds, or None."""
+    stamp = next((ts for ts, e in notifications(sb) if e == event), None)
+    return datetime.fromisoformat(stamp).timestamp() if stamp else None
 
 
-def results_rows(sb):
+def cycle_log_entries(sb):
+    log = sb.home / "orchestrator.log"
+    return len(re.findall(r"^## ", log.read_text(), re.M)) if log.exists() else 0
+
+
+def results_rows(sb, slug):
     """Data rows of results.tsv in the state path, or None if the file has no tab-separated header."""
-    path = sb.state_path / "results.tsv"
+    path = sb.state_path(slug) / "results.tsv"
     if not path.exists():
         return None
     lines = [line for line in path.read_text().splitlines() if line.strip()]
@@ -351,72 +424,403 @@ def results_rows(sb):
     return lines[1:]
 
 
-def hello_file_checks(sb, checks):
-    hello = git("show", f"{sb.scenario.worker}:hello.txt", cwd=sb.project, check=False).stdout
-    checks.check("hello.txt on the branch has the one line", hello == HELLO_LINE + "\n", repr(hello))
+class Checks:
+    def __init__(self, label):
+        self.label = label
+        self.results = []
+
+    def check(self, name, ok, detail=""):
+        self.results.append((name, bool(ok), detail))
+        mark = "PASS" if ok else "FAIL"
+        print(f"[fixture] {self.label}: {mark}: {name}{' (' + str(detail) + ')' if detail and not ok else ''}")
+
+    @property
+    def passed(self):
+        return bool(self.results) and all(ok for _, ok, _ in self.results)
 
 
-def exploration_checks(sb, checks):
-    rows = results_rows(sb)
-    checks.check(
-        "the state path has results.tsv with a header and at least one experiment row",
-        rows,
-        "missing or no header" if rows is None else "no rows",
-    )
-    for name in ("experiments-comparator.html", "report.html"):
-        path = sb.state_path / name
-        checks.check(f"the state path has {name}", path.exists() and "<" in path.read_text(), str(path))
-
-
-SCENARIOS = {
-    "build": Scenario(1, "hello-file", ("check.sh",), hello_file_checks),
-    "exploration": Scenario(
-        2, "shorten-fib", ("check.sh", "fib.py", "measure.sh"), exploration_checks, agent="auto-researcher"
-    ),
-}
-
-
-def final_checks(sb, checks, runtime):
-    worker = sb.scenario.worker
-    checks.check("Task is In Review", task_state(sb) == "In Review", task_state(sb))
-    comments = task_comments(sb)
-    checks.check(
-        f"a Tracker comment names the branch {worker}", any(worker in c for c in comments), f"{len(comments)} comments"
-    )
-    branch_log = git("log", "--oneline", f"main..{worker}", cwd=sb.project, check=False).stdout.strip()
-    checks.check(f"branch {worker} has a commit that is not in main", branch_log, "no commits")
-    sb.scenario.result_checks(sb, checks)
-    live = workers(runtime)
-    checks.check(f"Worker {worker} is closed", worker not in live, str(live))
-    errors = state_errors(sb)
-    checks.check("state.json still validates", not errors, "; ".join(errors))
-    log = (sb.home / "orchestrator.log").read_text() if (sb.home / "orchestrator.log").exists() else ""
-    checks.check("the Cycle log has entries", log.count("\n## ") + log.startswith("## ") >= 2)
-
-
-def wait_for(predicate, seconds, poll=10):
+def wait_for(predicate, seconds, poll=10, observe=None):
     deadline = time.time() + seconds
     while time.time() < deadline:
+        if observe:
+            observe()
         if predicate():
             return True
         time.sleep(poll)
+    if observe:
+        observe()
     return predicate()
+
+
+class Scenario:
+    """One scenario in its own sandbox: its Cycle command, its Worker names and its checks."""
+
+    def __init__(self, number, name, args, slugs, project_files=("check.sh",)):
+        self.number = number
+        self.args = args
+        self.runtime = args.runtime
+        self.workers = [f"ol-{slug}" for slug in slugs]
+        root = Path(tempfile.mkdtemp(prefix=f"openloops-fixture-s{number}-"))
+        self.sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode,
+                                self.runtime, project_files)
+        self.command = cycle_command((self.sb.home / "host.md").read_text())
+        self.checks = Checks(f"scenario {number}")
+        self.check = self.checks.check
+        self.cycles = 0
+        print(f"[fixture] === Scenario {number} ({name})")
+        print(f"[fixture] sandbox: {self.sb.root}")
+
+    def live(self):
+        return workers(self.runtime)
+
+    def cycle(self):
+        """Run one Cycle and check that it ended cleanly, so a crashed Cycle never passes as a quiet one."""
+        self.cycles += 1
+        label = f"scenario {self.number}: Cycle {self.cycles}"
+        print(f"[fixture] {label}: start")
+        started, entries = time.time(), cycle_log_entries(self.sb)
+        try:
+            code = subprocess.run(
+                self.command, shell=True, cwd=self.sb.home, timeout=self.args.cycle_timeout_minutes * 60
+            ).returncode
+        except subprocess.TimeoutExpired:
+            code = "timeout"
+        print(f"[fixture] {label}: exit {code} after {time.time() - started:.0f}s")
+        self.check(f"Cycle {self.cycles} exited 0 and added a Cycle log entry",
+                   code == 0 and cycle_log_entries(self.sb) > entries, f"exit {code}")
+
+    def quiet_cycle(self, what):
+        """Run one Cycle in which nothing changes, and check that it sends no message."""
+        before = notifications(self.sb)
+        self.cycle()
+        after = notifications(self.sb)
+        self.check(f"no Notifier message on a Cycle where nothing changed ({what})", after == before, after[len(before):])
+
+    def cycles_until(self, done, observe=None):
+        """Wait for the Workers and run Cycles until done() or the scenario's time is up."""
+        deadline = time.time() + self.args.timeout_minutes * 60
+        while time.time() < deadline and not done():
+            wait_for(done, min(self.args.interval_seconds, max(0, deadline - time.time())), observe=observe)
+            if time.time() >= deadline:
+                break
+            self.cycle()
+            if observe:
+                observe()
+
+    def state_valid(self):
+        errors = state_errors(self.sb)
+        self.check("state.json validates against core/state.schema.json", not errors, "; ".join(errors))
+
+    def finish(self):
+        stop_workers(self.runtime, self.workers)
+        verdict = "PASSED" if self.checks.passed else "FAILED"
+        print(f"[fixture] scenario {self.number}: Cycles: {self.cycles}")
+        print(f"[fixture] SCENARIO {self.number} {verdict}")
+        if not self.checks.passed:
+            print(f"[fixture] inspect: {self.sb.root}")
+        return self.checks.passed
+
+
+def reach_in_review(s, slug, agent=""):
+    """Scenarios 1 and 2: Cycle 1 spawns the Worker; later Cycles see it reach In Review and close it."""
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    s.cycle()
+    live = s.live()
+    check(f"{s.runtime} Worker {worker} exists after Cycle 1", worker in live, live)
+    check(f"state.json has a record for {worker}", worker in read_state(sb), list(read_state(sb)))
+    if agent:
+        command = pane_command(s.runtime, worker)
+        check(f"Worker {worker} started with --agent {agent}", f"--agent {agent}" in command, command[:200])
+    s.state_valid()
+    check("Task is Working (or already In Review)", task_state(sb, slug) in ("Working", "In Review"), task_state(sb, slug))
+    check("Notifier log has a spawned line", "spawned" in events(sb), events(sb))
+
+    s.cycles_until(lambda: task_state(sb, slug) == "In Review" and worker not in s.live())
+
+    check("Task is In Review", task_state(sb, slug) == "In Review", task_state(sb, slug))
+    comments = task_comments(sb, slug)
+    check(f"a Tracker comment names the branch {worker}", any(worker in c for c in comments), f"{len(comments)} comments")
+    branch_log = git("log", "--oneline", f"main..{worker}", cwd=sb.project, check=False).stdout.strip()
+    check(f"branch {worker} has a commit that is not in main", branch_log, "no commits")
+    check(f"Worker {worker} is closed", worker not in s.live(), s.live())
+    s.state_valid()
+
+
+def scenario_build(args):
+    slug = "hello-file"
+    s = Scenario(1, "build: a Ready Task reaches In Review", args, [slug])
+    write_spec(s.sb, slug, "Add hello.txt", "Add a file `hello.txt` at the root of the repo with one line: `Hello from Open Loops.`",
+               "`hello.txt` exists on the Task branch with exactly one line, `Hello from Open Loops.`")
+    write_task(s.sb, slug, "Add hello.txt", "Ready")
+    reach_in_review(s, slug)
+    hello = git("show", f"ol-{slug}:hello.txt", cwd=s.sb.project, check=False).stdout
+    s.check("hello.txt on the branch has the one line", hello == "Hello from Open Loops.\n", repr(hello))
+    return s.finish()
+
+
+def scenario_exploration(args):
+    slug = "shorten-fib"
+    s = Scenario(2, "exploration: an Exploration Task reaches In Review", args, [slug],
+                 project_files=("check.sh", "fib.py", "measure.sh"))
+    write_fixture_spec(s.sb, slug)
+    write_task(s.sb, slug, "Shorten fib.py", "Ready")
+    reach_in_review(s, slug, agent="auto-researcher")
+    rows = results_rows(s.sb, slug)
+    s.check("the state path has results.tsv with a header and at least one experiment row", rows,
+            "missing or no header" if rows is None else "no rows")
+    for name in ("experiments-comparator.html", "report.html"):
+        path = s.sb.state_path(slug) / name
+        s.check(f"the state path has {name}", path.exists() and "<" in path.read_text(), str(path))
+    return s.finish()
+
+
+def scenario_gated(args):
+    up, down = "gate-up", "gate-down"
+    s = Scenario(3, "gated: a Gated Task stays Ready until its upstream Task is Done", args, [up, down])
+    sb, check = s.sb, s.check
+    write_spec(sb, up, "Add up.txt", "Add a file `up.txt` with one line: `Up.`", "`up.txt` has one line, `Up.`")
+    write_spec(sb, down, "Add down.txt", "Add a file `down.txt` with one line: `Down.`", "`down.txt` has one line, `Down.`",
+               depends_on=[up])
+    sha = make_task_branch(sb, up, "up.txt", "Up.")
+    write_task(sb, up, "Add up.txt", "In Review", comments=[("worker", pr_comment(up, sha, "Added up.txt."))])
+    write_task(sb, down, "Add down.txt", "Ready", depends_on=[up])
+    write_state(sb, {f"ol-{up}": worker_record(sb, up, "in_review")})
+
+    s.quiet_cycle("upstream Task In Review")
+    check(f"no Worker ol-{down} while {up} is In Review", f"ol-{down}" not in s.live(), s.live())
+    check(f"{down} stays Ready", task_state(sb, down) == "Ready", task_state(sb, down))
+    check(f"state.json has no record for ol-{down}", f"ol-{down}" not in read_state(sb), list(read_state(sb)))
+
+    # The Owner accepts the upstream Task.
+    git("merge", "-q", "--no-ff", "-m", f"Merge ol-{up}", f"ol-{up}", cwd=sb.project)
+    set_task_state(sb, up, "Done")
+
+    s.cycle()
+    # A trivial Spec can be spawned, finished and closed in one Cycle, so the record is the evidence.
+    check(f"state.json has a record for ol-{down} after {up} is Done", f"ol-{down}" in read_state(sb), list(read_state(sb)))
+    check(f"{down} is Working (or already In Review)", task_state(sb, down) in ("Working", "In Review"), task_state(sb, down))
+    check("Notifier log has a spawned line", "spawned" in events(sb), events(sb))
+    s.state_valid()
+    return s.finish()
+
+
+def scenario_parent(args):
+    parent, a, b = "family", "fam-a", "fam-b"
+    s = Scenario(4, "parent: a parent Task with two child Tasks and a gap-fill prompt", args, [parent, a, b])
+    sb, check = s.sb, s.check
+    alpha = "Alpha line."
+    write_spec(sb, a, "Add alpha.txt", f"Add a file `alpha.txt` with one line: `{alpha}`", f"`alpha.txt` has one line, `{alpha}`")
+    write_spec(sb, b, "Add beta.txt",
+               "Add a file `beta.txt` with one line: the same line as in `alpha.txt`, which is "
+               "{TBD: the exact line that the Task fam-a writes to alpha.txt}.",
+               "`beta.txt` has the same one line as `alpha.txt`.", depends_on=[a], spec_status="draft")
+    write_task(sb, parent, "Add alpha.txt and beta.txt", "Ready", spec=False,
+               body="Parent Task. The work is in the child Tasks fam-a and fam-b; each has its own Spec.")
+    write_task(sb, a, "Add alpha.txt", "Ready", parent=parent)
+    write_task(sb, b, "Add beta.txt", "Ready", parent=parent, depends_on=[a])
+
+    seen = {"parent_spawned": False, "b_early": False}
+
+    def observe():
+        live = s.live()
+        seen["parent_spawned"] |= f"ol-{parent}" in live or f"ol-{parent}" in read_state(sb)
+        if task_state(sb, a) != "Done":
+            seen["b_early"] |= f"ol-{b}" in live or f"ol-{b}" in read_state(sb)
+
+    s.cycle()
+    observe()
+    check(f"Worker ol-{a} exists after Cycle 1", f"ol-{a}" in s.live(), s.live())
+    check(f"{b} is Gated (Ready, no Worker)", task_state(sb, b) == "Ready" and f"ol-{b}" not in s.live(), task_state(sb, b))
+
+    s.cycles_until(lambda: f"ol-{a}" not in s.live() and task_state(sb, a) == "In Review", observe=observe)
+
+    record = read_state(sb).get(f"ol-{a}", {})
+    check("gap_fill_done is true when completion is accepted", record.get("gap_fill_done") is True, record)
+    check(f"Worker ol-{a} is closed and {a} is In Review",
+          f"ol-{a}" not in s.live() and task_state(sb, a) == "In Review", task_state(sb, a))
+    spec_b = sb.spec_file(b)
+    check(f"the gap in the dependent Spec {b} is filled", "{TBD" not in spec_b.read_text() and alpha in spec_b.read_text(),
+          spec_b.read_text().split("## What", 1)[-1][:200])
+    accepted = first_event_time(sb, "in_review")
+    check(f"the gap was filled before the completion of {a} was accepted",
+          accepted is not None and spec_b.stat().st_mtime <= accepted + 1, f"Spec {spec_b.stat().st_mtime}, in_review {accepted}")
+
+    # The Owner accepts fam-a; the next Cycle releases fam-b.
+    set_task_state(sb, a, "Done")
+    s.cycle()
+    observe()
+    # A trivial Spec can be spawned, finished and closed in one Cycle, so the record is the evidence.
+    check(f"ol-{b} was spawned after {a} is Done",
+          f"ol-{b}" in read_state(sb) and task_state(sb, b) in ("Working", "In Review"), task_state(sb, b))
+    check(f"no Worker or record for ol-{b} before {a} was Done", not seen["b_early"])
+    check(f"the parent never spawned (no ol-{parent}, no record, still Ready)",
+          not seen["parent_spawned"] and task_state(sb, parent) == "Ready", task_state(sb, parent))
+    s.state_valid()
+    return s.finish()
+
+
+def scenario_follow_up(args):
+    slug = "followup-file"
+    s = Scenario(5, "follow-up: a Follow-up comment causes a Respawn in the same Workspace", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    write_spec(sb, slug, "Add followup.txt", "Add a file `followup.txt` with one line: `First line.`",
+               "`followup.txt` has one line, `First line.`")
+    sha = make_task_branch(sb, slug, "followup.txt", "First line.")
+    write_task(sb, slug, "Add followup.txt", "In Review", comments=[
+        ("worker", pr_comment(slug, sha, "Added followup.txt.")),
+        ("owner", "ACTION: add a second line `Second line.` to followup.txt."),
+    ])
+    write_state(sb, {worker: worker_record(sb, slug, "in_review")})
+    before = worktrees_and_branches(sb)
+
+    s.cycle()
+    check(f"Worker {worker} exists after Cycle 1", worker in s.live(), s.live())
+    where = worker_directory(s.runtime, worker)
+    check("the Worker runs in the same Workspace", where and os.path.realpath(where) == os.path.realpath(sb.worktree(slug)), where)
+    check("no new Workspace or branch was made", worktrees_and_branches(sb) == before, worktrees_and_branches(sb))
+    check("Notifier log has a respawned line", "respawned" in events(sb), events(sb))
+    # A fast Worker can be back In Review already; the Task state and the record must agree.
+    record = read_state(sb).get(worker, {})
+    check("the Task is Working with a working record (or back In Review)",
+          (task_state(sb, slug), record.get("status")) in (("Working", "working"), ("In Review", "working"), ("In Review", "in_review")),
+          (task_state(sb, slug), record.get("status")))
+    s.state_valid()
+    return s.finish()
+
+
+def scenario_merge(args):
+    slug = "merge-file"
+    s = Scenario(6, "merge: a merged Task branch moves the Task to Done", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    write_spec(sb, slug, "Add merge.txt", "Add a file `merge.txt` with one line: `Merge me.`", "`merge.txt` has one line, `Merge me.`")
+    sha = make_task_branch(sb, slug, "merge.txt", "Merge me.")
+    write_task(sb, slug, "Add merge.txt", "In Review", comments=[("worker", pr_comment(slug, sha, "Added merge.txt."))])
+    write_state(sb, {worker: worker_record(sb, slug, "in_review")})
+
+    s.quiet_cycle("open PR, no Review comments")
+    check("the Task stays In Review while the branch is not merged", task_state(sb, slug) == "In Review", task_state(sb, slug))
+    check("no Worker was spawned", worker not in s.live(), s.live())
+
+    # The Owner merges the Task branch into main.
+    git("merge", "-q", "--no-ff", "-m", f"Merge {worker}", worker, cwd=sb.project)
+    s.cycle()
+    check("the Task is Done", task_state(sb, slug) == "Done", task_state(sb, slug))
+    check("Notifier log has a done line", "done" in events(sb), events(sb))
+    check("the state.json record is removed", worker not in read_state(sb), list(read_state(sb)))
+    check("no Worker was spawned", worker not in s.live(), s.live())
+    s.state_valid()
+    return s.finish()
+
+
+def scenario_backlog(args):
+    slug = "backlog-file"
+    s = Scenario(7, "backlog: a Task in Backlog is never touched", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    write_spec(sb, slug, "Add backlog.txt", "Add a file `backlog.txt` with one line: `Not yet.`", "`backlog.txt` has one line, `Not yet.`")
+    write_task(sb, slug, "Add backlog.txt", "Backlog", comments=[("owner", "ACTION: start this now.")])
+    digest = file_digest(sb.task_file(slug))
+
+    s.quiet_cycle("only a Backlog Task")
+    check("the Backlog Task file is unchanged", file_digest(sb.task_file(slug)) == digest)
+    check("no Worker was spawned", worker not in s.live(), s.live())
+    check("state.json has no record for it", worker not in read_state(sb), list(read_state(sb)))
+    check("no branch or Workspace was made",
+          not git("branch", "--list", worker, cwd=sb.project).stdout.strip() and not sb.worktree(slug).exists())
+    return s.finish()
+
+
+def scenario_blocked(args):
+    slug = "blocked-file"
+    s = Scenario(8, "blocked: a Blocked Task whose blocker cleared goes back to Ready", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    data = sb.project / "data" / "input.txt"
+    write_spec(sb, slug, "Copy data/input.txt to copy.txt",
+               "Copy the file `data/input.txt` (the Owner adds it) to a new file `copy.txt`.",
+               "`copy.txt` has the same content as `data/input.txt`.")
+    write_task(sb, slug, "Copy data/input.txt to copy.txt", "Blocked", comments=[
+        ("worker", f"The file {data} does not exist, so there is nothing to copy. "
+                   f"I need the Owner to add {data} to main. BLOCKED — {data} is missing."),
+    ])
+    write_state(sb, {worker: worker_record(sb, slug, "blocked", blocked_notified=True)})
+
+    s.quiet_cycle("blocker still there, Owner already told")
+    check("the Task stays Blocked", task_state(sb, slug) == "Blocked", task_state(sb, slug))
+
+    # The Owner clears the blocker.
+    data.parent.mkdir()
+    data.write_text("Input data.\n")
+    git("add", "data/input.txt", cwd=sb.project)
+    git("commit", "-q", "-m", "Add data/input.txt", cwd=sb.project)
+
+    s.cycle()
+    check("the Task is back in Ready (or already Working)", task_state(sb, slug) in ("Ready", "Working"), task_state(sb, slug))
+    check("Notifier log has an unblocked line", "unblocked" in events(sb), events(sb))
+    check("Notifier log has no blocked line", "blocked" not in events(sb), events(sb))
+    record = read_state(sb).get(worker)
+    check("the record is kept, with blocked_notified cleared", record is not None and record.get("blocked_notified") is not True, record)
+    s.state_valid()
+    return s.finish()
+
+
+def scenario_tool_failure(args):
+    slug = "alert-file"
+    s = Scenario(9, "tool-failure: an unreadable Tracker gives one alert, then a recovery message", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
+    write_spec(sb, slug, "Add alert.txt", "Add a file `alert.txt` with one line: `Alert.`", "`alert.txt` has one line, `Alert.`")
+    write_task(sb, slug, "Add alert.txt", "Ready")
+    digest = file_digest(sb.task_file(slug))
+
+    sb.tracker.chmod(0o000)
+    try:
+        check("the Tracker directory is unreadable for this user", not os.access(sb.tracker, os.R_OK))
+        s.cycle()
+        check("one system_alert after the first failed Cycle", events(sb) == ["system_alert"], events(sb))
+        state = read_state(sb)
+        check("state.json has a Tracker alert", "tracker" in state.get("alerts", {}), state.get("alerts"))
+        check("no other state.json entry", set(state) <= {"alerts"}, list(state))
+        check("no Worker was spawned during the outage", worker not in s.live(), s.live())
+        check("the Tracker directory is still unreadable (the Orchestrator did not change it)",
+              (sb.tracker.stat().st_mode & 0o777) == 0, oct(sb.tracker.stat().st_mode & 0o777))
+        s.quiet_cycle("Tracker still unreadable, Owner already told")
+    finally:
+        sb.tracker.chmod(0o755)
+
+    check("the Ready Task file is unchanged after the outage", file_digest(sb.task_file(slug)) == digest)
+    s.cycle()
+    check("system_recovered after the Tracker is readable again", events(sb)[:2] == ["system_alert", "system_recovered"], events(sb))
+    check("no second system_alert", events(sb).count("system_alert") == 1, events(sb))
+    check("the Tracker alert is removed", "tracker" not in read_state(sb).get("alerts", {}), read_state(sb))
+    check("the Cycle went on after recovery: the Ready Task was spawned",
+          worker in read_state(sb) and task_state(sb, slug) in ("Working", "In Review"), task_state(sb, slug))
+    s.state_valid()
+    return s.finish()
+
+
+# name -> (scenario function, the slugs of the Workers it can spawn)
+SCENARIOS = {
+    "build": (scenario_build, ["hello-file"]),
+    "exploration": (scenario_exploration, ["shorten-fib"]),
+    "gated": (scenario_gated, ["gate-up", "gate-down"]),
+    "parent": (scenario_parent, ["family", "fam-a", "fam-b"]),
+    "follow-up": (scenario_follow_up, ["followup-file"]),
+    "merge": (scenario_merge, ["merge-file"]),
+    "backlog": (scenario_backlog, ["backlog-file"]),
+    "blocked": (scenario_blocked, ["blocked-file"]),
+    "tool-failure": (scenario_tool_failure, ["alert-file"]),
+}
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--scenario", action="append", choices=list(SCENARIOS),
+                        help="run only this scenario (repeat for more); default: all")
     parser.add_argument("--runtime", choices=RUNTIMES, default="tmux", help="example runtime.md to use")
-    parser.add_argument("--scenario", choices=sorted(SCENARIOS), default="build", help="which scenario to run")
-    parser.add_argument("--setup-only", action="store_true", help="build the sandbox, print its paths, run no Cycle")
+    parser.add_argument("--setup-only", action="store_true", help="build one sandbox, print its paths, run no Cycle")
     parser.add_argument("--orchestrator-model", default="sonnet")
     parser.add_argument("--worker-model", default="sonnet")
-    parser.add_argument(
-        "--permission-mode",
-        default="bypassPermissions",
-        help="Claude Code permission mode for both agents (auto mode can deny the Orchestrator's key sends to Workers)",
-    )
-    parser.add_argument("--timeout-minutes", type=float, default=45, help="total time for the scenario")
-    parser.add_argument("--interval-seconds", type=float, default=120, help="time between Cycles")
+    parser.add_argument("--permission-mode", default="auto", help="Claude Code permission mode for both agents")
+    parser.add_argument("--timeout-minutes", type=float, default=45, help="time for the Worker phase of one scenario")
+    parser.add_argument("--interval-seconds", type=float, default=120, help="longest wait for a Worker between Cycles")
     parser.add_argument("--cycle-timeout-minutes", type=float, default=26, help="kill one Cycle after this time")
     args = parser.parse_args()
 
@@ -424,59 +828,48 @@ def main():
         if shutil.which(tool) is None:
             sys.exit(f"[fixture] missing tool: {tool}")
 
-    root = Path(tempfile.mkdtemp(prefix="openloops-fixture-"))
-    scenario = SCENARIOS[args.scenario]
-    worker = scenario.worker
-    sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode, scenario, args.runtime)
-    command = cycle_command((sb.home / "host.md").read_text())
-    print(f"[fixture] sandbox: {sb.root}")
-    print(f"[fixture] Runtime: {args.runtime}; attach to the Worker: {attach_hint(args.runtime, worker)}")
-    print(f"[fixture] Cycle command: {command}")
     if args.setup_only:
+        sb = build_sandbox(Path(tempfile.mkdtemp(prefix="openloops-fixture-")),
+                           args.orchestrator_model, args.worker_model, args.permission_mode, args.runtime)
+        print(f"[fixture] sandbox: {sb.root}")
+        print(f"[fixture] Cycle command: {cycle_command((sb.home / 'host.md').read_text())}")
         return 0
     if args.runtime == "herdr":
         error = start_herdr_session()
         if error:
             sys.exit(f"[fixture] {error}")
-    if worker in workers(args.runtime):
-        sys.exit(f"[fixture] a Worker {worker} already exists; stop it first: {stop_hint(args.runtime, worker)}")
+    chosen = [name for name in SCENARIOS if name in (args.scenario or SCENARIOS)]
+    names = [f"ol-{slug}" for name in chosen for slug in SCENARIOS[name][1]]
+    leftover = [n for n in names if n in workers(args.runtime)]
+    if leftover:
+        sys.exit(f"[fixture] Workers {leftover} already exist; stop them first: {stop_hint(args.runtime)}")
     # Workers start from the Runtime server's environment, so the server must run outside any agent
     # sandbox. For tmux, start it from here if it is not running, and stop only that helper session
-    # at the end. For Herdr, the fixture's own session (started above) is stopped at the end if the
-    # scenario passes.
+    # at the end. For Herdr, the fixture's own session (started above) is stopped at the end if all
+    # scenarios pass.
     helper = None
     if args.runtime == "tmux" and not tmux_sessions():
         helper = "openloops-fixture-server"
         subprocess.run(["tmux", "new-session", "-d", "-s", helper], check=True)
+    print(f"[fixture] Runtime: {args.runtime}; watch a Worker: {attach_hint(args.runtime)}")
 
-    checks = Checks()
-    deadline = time.time() + args.timeout_minutes * 60
-    cycle_timeout = args.cycle_timeout_minutes * 60
+    results = {}
+    try:
+        for name in chosen:
+            results[name] = SCENARIOS[name][0](args)
+    finally:
+        stop_workers(args.runtime, names)
+        if helper:
+            subprocess.run(["tmux", "kill-session", "-t", helper], capture_output=True)
 
-    run_cycle(sb, 1, command, cycle_timeout)
-    spawn_checks(sb, checks, args.runtime)
-
-    cycle = 1
-    while time.time() < deadline:
-        # Wait for the Worker to finish its turn, then let the next Cycle close it.
-        wait_for(lambda: task_state(sb) == "In Review", min(args.interval_seconds, max(0, deadline - time.time())))
-        if time.time() >= deadline:
-            break
-        cycle += 1
-        run_cycle(sb, cycle, command, cycle_timeout)
-        if task_state(sb) == "In Review" and worker not in workers(args.runtime):
-            break
-
-    final_checks(sb, checks, args.runtime)
-    print(f"[fixture] Cycles run: {cycle}")
-    print(f"[fixture] SCENARIO {scenario.number} ({args.scenario}) {'PASSED' if checks.passed else 'FAILED'} (Runtime: {args.runtime})")
-    if helper:
-        subprocess.run(["tmux", "kill-session", "-t", helper], capture_output=True)
-    if args.runtime == "herdr" and checks.passed:
+    passed = len(results) == len(chosen) and all(results.values())
+    if args.runtime == "herdr" and passed:
         subprocess.run(["herdr", "session", "stop", HERDR_SESSION], capture_output=True)
-    if not checks.passed:
-        print(f"[fixture] inspect: {sb.root}; stop a leftover Worker: {stop_hint(args.runtime, worker)}")
-    return 0 if checks.passed else 1
+    print("[fixture] === Summary")
+    for name, ok in results.items():
+        print(f"[fixture] {name}: {'PASSED' if ok else 'FAILED'}")
+    print(f"[fixture] {f'ALL {len(chosen)} SCENARIOS PASSED' if passed else 'SOME SCENARIOS FAILED'} (Runtime: {args.runtime})")
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

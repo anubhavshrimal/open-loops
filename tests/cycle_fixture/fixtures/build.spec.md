@@ -1,5 +1,5 @@
 ---
-title: "Add hello.txt"
+title: "{{TITLE}}"
 type: source-summary
 section: projects
 tags: [task, fixture]
@@ -7,23 +7,23 @@ sources: []
 created: 2026-10-06
 updated: 2026-10-06
 related: []
-tracker_id: "hello-file"
+tracker_id: "{{TASK_ID}}"
 report: ""
 workspace: "{{PROJECT_REPO}}"
 branch: "main"
-depends_on: []
-spec_status: "ready"
+depends_on: [{{DEPENDS_ON}}]
+spec_status: "{{SPEC_STATUS}}"
 ---
 
-# Add hello.txt
+# {{TITLE}}
 
 ## What
 
-Add a file `hello.txt` at the root of the repo with one line: `Hello from Open Loops.`
+{{WHAT}}
 
 ## Why
 
-This is the smallest Build Spec. The Cycle fixture uses it to prove that a Ready Task reaches In Review on a branch.
+The Cycle fixture uses this small Build Spec to drive one Task through the Open Loop.
 
 ## Scope
 
@@ -36,7 +36,7 @@ Create the file, commit it on your branch, and follow the On Completion steps of
 
 ## Task Breakdown
 
-1. Add `hello.txt` with the one line: done when: `cat hello.txt` prints `Hello from Open Loops.`
+1. {{WHAT}} Done when: the file has exactly that content.
 
 ## Boundaries
 
@@ -50,7 +50,7 @@ None.
 
 ## Acceptance Criteria
 
-- [ ] `hello.txt` exists on the Task branch with exactly one line, `Hello from Open Loops.`
+- [ ] {{ACCEPTANCE}}
 - [ ] The build and test command passes.
 
 ## Context Links

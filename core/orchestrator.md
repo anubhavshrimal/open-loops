@@ -269,7 +269,7 @@ Top-level keys:
 - Do NOT read Specs for work or do Task work yourself. Workers do that.
 - Do NOT send a message if nothing happened (silent mode).
 - Do NOT spawn more Workers than the cap.
-- Run only shell commands that never wait for input. A command that asks a question (for example `mv` when the shell aliases it to `mv -i`) blocks the Cycle, and the session cannot end. Write files with your file tools, or use `mv -f` and `cp -f`.
+- Run only shell commands that never wait for input. A command that asks a question (for example `mv` or `cp` when the shell aliases it to `mv -i` or `cp -i`) blocks the Cycle, and the session cannot end. Write files with your file tools. To copy or move a file in the shell, skip the alias: `command mv -f`, `command cp -f` (with a `cp -i` alias, `cp -f` still asks).
 - **Slot tool failure.** If the tools of any Slot (Tracker, Runtime, Review System, or a missing notes file) are not available or fail in this Cycle, apply this dedup and recovery pattern:
   - Check if `state.json.alerts["<slot>"]` exists.
   - If NOT: add it (`since`, `message`) and send `system_alert`: `⚠️ <Slot> unavailable: cannot run the Cycle. <root cause if known>. Fix the <Slot> tools.` Then STOP (still log the Cycle). Make no other state changes.
