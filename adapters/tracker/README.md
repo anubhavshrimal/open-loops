@@ -27,7 +27,23 @@ Rules that the core applies to every Tracker:
 
 | Example | Tracker |
 |---|---|
+| [`github-issues.md`](github-issues.md) | GitHub Issues through `gh` (default) |
 | [`markdown.md`](markdown.md) | Markdown files: one file per Task (local fallback, no account) |
+
+## Contract map: `github-issues.md`
+
+| Capability | Line in `github-issues.md` |
+|---|---|
+| Find the Tasks in a state | Capabilities: "Find Tasks in a state" |
+| Read a Task's body | Capabilities: "Read a Task's body" |
+| Read a Task's comments, with ids | Capabilities: "Read a Task's comments" |
+| Read a Task's children | Capabilities: "Read a Task's children" |
+| Read a Task's dependencies and dependents | Capabilities: "Read a Task's dependencies" |
+| Post a comment | Capabilities: "Post a comment" |
+| Change a Task's state | Capabilities: "Change state" |
+| Map of the six states | "States" table |
+| Follow-up prefix | "Follow-up prefix" line |
+| `Spec:` line rule | "Task body and the `Spec:` line" |
 
 ## Contract map: `markdown.md`
 

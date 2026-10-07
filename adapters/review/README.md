@@ -31,7 +31,26 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 
 | Example | Review System |
 |---|---|
+| [`github-pr.md`](github-pr.md) | GitHub PR through `gh` (default) |
 | [`local-branch.md`](local-branch.md) | Local branch: the Task branch is the PR (local fallback, no hosting service) |
+
+## Contract map: `github-pr.md`
+
+| Capability | Line in `github-pr.md` |
+|---|---|
+| Push a branch | Worker capabilities: "Push a branch" |
+| Open a PR | Worker capabilities: "Open a PR" |
+| Push commits | Worker capabilities: "Push commits" |
+| Reply to a Review comment | Worker capabilities: "Reply to a Review comment" |
+| Read PR state | Orchestrator capabilities: "Read PR state" |
+| Read Review comments with ids | Orchestrator capabilities: "Read Review comments with ids" |
+| Read Checks | Orchestrator capabilities: "Read Checks" (Worker side: "Checks") |
+| Open PRs as | "Open PRs as" line |
+| Remote | "Remote to push to" line |
+| PR reference | Worker capabilities: "PR reference" |
+| Review skill | "Review skill" line |
+| Build and test command | "Projects" table |
+| Triggers (Respawn, Done) | "Triggers" section |
 
 ## Contract map: `local-branch.md`
 
