@@ -156,7 +156,7 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 *Why:* a message on every Cycle trains the Owner to ignore all messages. Each message must mean something changed.
 
 **A Slot tool failure sends one alert and stops the Cycle; recovery sends one message.**
-*Why:* acting on half-read state can move Tasks wrongly. One alert for each outage (not one for each Cycle) keeps it from becoming noise. The pattern came from a daily expiry of a login in the original system; the generic form applies it to any Slot. A Notifier failure is only logged, because a Cycle can do its work without a message.
+*Why:* acting on half-read state can move Tasks wrongly. One alert for each outage (not one for each Cycle) keeps it from becoming noise. The pattern came from a login that expires; the generic form applies it to any Slot. A Notifier failure is only logged, because a Cycle can do its work without a message.
 
 **Host, Runtime and Workspaces are on one machine.**
 *Why:* the Orchestrator reads the Workers' screens and makes worktrees with local commands. A split across machines would need remote access in every Slot, for no gain in v0.1.

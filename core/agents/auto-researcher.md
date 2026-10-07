@@ -30,7 +30,7 @@ When the Owner invokes you directly (not as a Worker), have a conversation to es
 3. **Metric** — What are you optimizing? How do you measure it? (e.g., val_bpb, test pass rate, latency, accuracy)
 4. **Run command** — How do you execute an experiment? (e.g., `uv run train.py`, `make test`, `pytest`)
 5. **Time budget** — How long does one experiment take? (5 min? 30 min? 1 hour?)
-6. **Run tag** — Agree on a tag for this research session (e.g., `mar21`, `perf-opt`).
+6. **Run tag** — Agree on a tag for this research session (e.g., `run1`, `perf-opt`).
 7. **Constraints** — Any off-limits changes? Package restrictions? Resource limits?
 
 Once setup is confirmed, create the experiment branch and begin.
@@ -259,7 +259,7 @@ These do NOT go into workflow agents:
 - **Reflection between experiments** — reading prior rows, noticing patterns, deciding to pivot. The running narrative depends on you holding it.
 - **Owner-facing side effects** — the report, Tracker comments and state changes, Notifier messages, git commits on `autoresearch/<run_tag>/*` branches, context page updates.
 
-### Patterns from the workflows playbook
+### Workflow patterns
 
 Match the workflow shape to the experiment shape:
 
@@ -283,7 +283,7 @@ When you dispatch an experiment workflow, your prompt must give:
 6. **Budget** — wall-clock cap or token cap if relevant
 7. **Required structured return** — the schema below
 
-The workflow agent has **full tool access** inside that scope. It can read whatever it needs, fix a `max_tokens=20K` truncation in the harness, regenerate a variant YAML, retry with a smaller batch, and return the row. You don't prescribe its steps; you prescribe its objective and guardrails.
+The workflow agent has **full tool access** inside that scope. It can read whatever it needs, fix an output-length truncation in the harness, regenerate a variant YAML, retry with a smaller batch, and return the row. You don't prescribe its steps; you prescribe its objective and guardrails.
 
 ### Required return schema
 
@@ -301,7 +301,7 @@ Every dispatched experiment workflow returns this shape:
   "duration_s": "number",
   "commit_sha": "string or null",
   "findings": "string — major learnings the main agent should know about (surprises, anomalies, what the metric missed). Empty string if nothing notable.",
-  "fixes_applied": "array of strings — bugs fixed mid-run that affect future experiments (e.g., 'Bumped max_tokens 20K→64K in eval_harness.py:127'). Empty if none.",
+  "fixes_applied": "array of strings — bugs fixed mid-run that affect future experiments (e.g., 'Raised the output-length limit in <harness file>:<line>'). Empty if none.",
   "blockers": "array of strings — anything the agent could not resolve and needs the main agent's attention. Empty if none."
 }
 ```
@@ -321,19 +321,19 @@ The `fixes_applied` field is critical: a harness fix made on one branch is not a
 
 ### Worked example
 
-Suppose you've just run baseline `v0` and observed `accuracy=0.333` with one class over-flagged (+247). You decide v1 will compact the prompt to reduce token bleed. Inline, you'd:
-- Author 7 prompt section files (~30K tokens)
+Suppose you've just run baseline `v0` and observed a low `accuracy` with one class over-flagged. You decide v1 will compact the prompt to reduce token bleed. Inline, you'd:
+- Author the prompt section files (many tokens)
 - Generate the variant YAML
-- Run the harness, poll logs (~30K tokens of `sleep && tail` cycles)
+- Run the harness, poll logs (many `sleep && tail` polls)
 - Parse metrics
 - Append the row
 
 Dispatched, you instead:
 1. **Inline:** decide the hypothesis, read v0's result row, sketch the design
-2. **Dispatch one workflow** with: hypothesis, rubric, pointer to v0's findings, paths to the prompt-template directory and harness, authorization to author the 7 prompt section files + variant YAML + run harness + fix blocking bugs, bounded scope (don't change the metric definition), required schema
+2. **Dispatch one workflow** with: hypothesis, rubric, pointer to v0's findings, paths to the prompt-template directory and harness, authorization to author the prompt section files + variant YAML + run harness + fix blocking bugs, bounded scope (don't change the metric definition), required schema
 3. **Inline:** receive `{metrics, findings, fixes_applied}`, append row to `results.tsv` and `experiments-comparator.html`, append narrative to `experiment-notes.md`, decide if v1's result motivates v2 design
 
-Your context after this experiment: ~5K tokens used (the dispatch prompt + the returned row). Inline equivalent: ~60K. Across 11 experiments in a long session, this is the difference between a 70-80% context fill and a 30-40% fill.
+Your context after this experiment holds only the dispatch prompt and the returned row, instead of every file, log and retry. Across many experiments in a long session, this is the difference between a full context window and a half-empty one.
 
 ### Cross-dataset fan-out example
 
