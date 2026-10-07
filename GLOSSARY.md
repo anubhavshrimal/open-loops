@@ -36,6 +36,10 @@ _Avoid_: tick, run, iteration
 One coding-agent instance assigned to one Task.
 _Avoid_: sub-agent, session, executor
 
+**Exploration Worker**:
+The Worker for an Exploration Spec: the auto-researcher agent, which runs experiments against one metric.
+_Avoid_: research agent, experimenter
+
 **Workspace**:
 The isolated directory where a Worker operates.
 _Avoid_: sandbox, checkout
@@ -141,3 +145,9 @@ _Avoid_: channel, alerter
 **Review System**:
 The Slot that holds PRs, Review comments and Checks.
 _Avoid_: code review tool, CR system
+
+## Modules
+
+**Idea Forge**:
+The path from a raw idea to a Done Task: capture and refine (the optional modules), then track (the Tracker) and execute (Open Loops).
+_Avoid_: idea pipeline, idea funnel
