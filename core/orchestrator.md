@@ -99,7 +99,7 @@ For each **eligible unit of work** (a normal Task, or an eligible child):
 - Derive the slug from the Spec filename (for example `paper-plan.md` → `paper-plan`). If the Task body is the Spec, derive it from the Task name.
 - Check with the Runtime if a Worker named `ol-<slug>` already exists.
 - If the Worker exists: skip (already running).
-- If the Task has a record in `state.json` with a prior status (`in_review`, `blocked`, and so on): the Owner moved it back to Ready for new work. Clear the old record and go on to the dependency check.
+- If the Task has a record in `state.json` with a prior status (`in_review`, `blocked`, and so on): the Owner moved it back to Ready for new work. Remove the old record and go on to the dependency check.
 - If there is no record: go on to the dependency check below.
 
 **Dependency Gate (per eligible Task):**
@@ -254,7 +254,7 @@ From the Tracker, find the Tasks in Blocked.
 For each Task:
 - Read the latest comment to understand the blocker.
 - Try to resolve it if possible (for example check if a dependency has cleared, a tool is back, or an external process completed).
-- If it is resolvable: move the Task back to Ready for a Respawn, clear `blocked_notified` in its record, send `unblocked`: "🔄 Unblocked: **<task name>** (`ol-<slug>`): <resolution>"
+- If it is resolvable: move the Task back to Ready for a Respawn, set `blocked_notified` to `false` in its record (keep the record; do not delete it), send `unblocked`: "🔄 Unblocked: **<task name>** (`ol-<slug>`): <resolution>"
 - If it is not resolvable: send `blocked`: "🚧 Blocked: **<task name>** (`ol-<slug>`). Reason: <blocker>. Needs Owner input." Send this only ONCE: check `state.json["ol-<slug>"].blocked_notified` and set it to `true` after you send.
 
 ## State File
