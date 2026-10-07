@@ -28,7 +28,20 @@ openclaw automations add --name "open-loops-cycle" --cron "*/30 * * * *" --sessi
 - Timeout: set the job timeout to 25 minutes (the interval minus 5 minutes; `timeoutSeconds` 1500 in the job settings), so that a hung Cycle cannot pile up. With no timeout, OpenClaw stops an isolated run after 60 minutes.
 - Notifier: to use OpenClaw's own messaging as the Notifier, write a `notifier.md` that sends with `openclaw message send --channel <channel> --target <target> --message "<text>"`.
 
+## Second job: wiki-gardener
+
+Add this job only if the Owner said yes to the wiki module. It is a second scheduled job, next to the Cycle job: it runs the wiki gardener lint prompt once a day (default), proposes fixes where the wiki drifts from the Tracker and the docs, and sends one Notifier message. It never edits the wiki. `{{GARDENER_DIR}}` is `modules/wiki/gardener` in the Open Loops clone, and `{{WIKI_DIR}}` is the wiki directory. The Owner applies the approved items later in an agent session that follows `{{GARDENER_DIR}}/apply.md` (see `modules/wiki/README.md`).
+
+One more automation, once a day, each run an isolated session. Set its timeout to 60 minutes (`timeoutSeconds` 3600):
+
+```sh
+openclaw automations add --name "open-loops-wiki-gardener" --cron "0 6 * * *" --session isolated --model {{ORCHESTRATOR_MODEL}} --thinking {{ORCHESTRATOR_EFFORT}} --message "Run the wiki gardener. Follow {{GARDENER_DIR}}/lint.md. Wiki: {{WIKI_DIR}}. Home directory: {{HOME_DIR}}."
+```
+
+To apply, the Owner pastes the text from "Copy decisions" into the OpenClaw chat with: "Follow {{GARDENER_DIR}}/apply.md."
+
 ## How to stop and remove
 
 - Pause: `openclaw automations disable <id>` (`openclaw automations list` shows the id). Resume with `openclaw automations enable <id>`. Live Workers keep running until you stop them with the Runtime.
 - Remove: `openclaw automations remove <id>`, stop the `ol-` Workers with the Runtime, then delete the home directory if you no longer need its state and logs. The Workspaces under `<repo>/.openloops/` are kept.
+- wiki-gardener job: disable or remove the `open-loops-wiki-gardener` automation in the same way.

@@ -94,6 +94,37 @@ class ExampleWikiTest(unittest.TestCase):
             self.assertRegex(line, r"^## \[\d{4}-\d{2}-\d{2}\] (ingest|query|lint|init|update) \| .+")
 
 
+class GardenerTest(unittest.TestCase):
+    GARDENER = MODULE / "gardener"
+    HOSTS = ("cron-claude", "cron-codex", "kirocrew", "openclaw")
+
+    def test_lint_is_read_only_and_uses_the_tracker_and_notifier_notes_files(self):
+        lint = (self.GARDENER / "lint.md").read_text()
+        for text in ("<home>/tracker.md", "<home>/notifier.md", "Do not edit the wiki.", "proposal-template.html",
+                     "Do not post a comment or change a state."):
+            self.assertIn(text, lint)
+
+    def test_apply_changes_only_approved_items(self):
+        apply = (self.GARDENER / "apply.md").read_text()
+        self.assertIn("Apply only the items that the Owner approved or edited.", apply)
+        self.assertIn("gardener(G-MMDD-n): <summary>", apply)
+
+    def test_proposal_template_has_its_placeholders_and_copy_decisions(self):
+        page = (self.GARDENER / "proposal-template.html").read_text()
+        self.assertIn('<script id="data" type="application/json">__ITEMS_JSON__</script>', page)
+        self.assertIn("'gardener ' + DATE + ': '", page)
+        self.assertIn("Copy decisions", page)
+
+    def test_every_host_example_has_the_second_job_after_the_cycle_job(self):
+        for name in self.HOSTS:
+            text = (REPO / f"adapters/host/{name}.md").read_text()
+            cycle, _, rest = text.partition("## Second job: wiki-gardener")
+            self.assertIn("## How a Cycle starts", cycle, name)
+            job = rest.split("## How to stop and remove", 1)[0]
+            self.assertIn("Run the wiki gardener. Follow {{GARDENER_DIR}}/lint.md. Wiki: {{WIKI_DIR}}.", job, name)
+            self.assertIn("wiki-gardener job:", rest.split("## How to stop and remove", 1)[1], name)
+
+
 class SetupTest(unittest.TestCase):
     def test_setup_asks_one_yes_no_question_with_default_no_and_states_the_spec_rule(self):
         section = wiki_setup_section()

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wiki gardener proposal __DATE__</title>
+<style>
+  :root { --fg:#1d2228; --muted:#5b6670; --line:#dde2e7; --accent:#2f6fde; --ok:#1f8a4c; --no:#b42318; --edit:#b4531a; --bg:#fbfcfd; --note:#fff7e0; }
+  body { font: 15px/1.5 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--fg); background:var(--bg); margin:0; }
+  main { max-width: 1080px; margin: 0 auto; padding: 24px 32px 120px; }
+  h1 { font-size: 24px; margin: 8px 0 4px; }
+  .sub { color: var(--muted); }
+  .item { border:1px solid var(--line); border-radius:6px; background:#fff; padding: 12px 16px; margin: 16px 0; }
+  .item.approve { border-left: 5px solid var(--ok); }
+  .item.reject { border-left: 5px solid var(--no); }
+  .item.edit { border-left: 5px solid var(--edit); }
+  .item h2 { font-size: 16px; margin: 0 0 6px; }
+  .tag { display:inline-block; font-size:12px; padding:1px 6px; border-radius:10px; background:#eef1f4; margin-right:6px; }
+  .tag.needs { background:#fde7d9; color: var(--edit); }
+  .field { margin: 6px 0; }
+  .field b { display:block; font-size: 13px; color: var(--muted); }
+  ul { margin: 2px 0 2px 18px; padding: 0; }
+  li, p { margin: 2px 0; }
+  .decide button { margin-right: 6px; font-size: 13px; padding: 4px 10px; border-radius: 4px; border:1px solid var(--line); background:#fff; cursor:pointer; }
+  .decide button.on.approve { background: var(--ok); color:#fff; border-color: var(--ok); }
+  .decide button.on.reject { background: var(--no); color:#fff; border-color: var(--no); }
+  .decide button.on.edit { background: var(--edit); color:#fff; border-color: var(--edit); }
+  .c-btn { display:inline-block; margin-left:6px; font-size:12px; line-height:1; padding:2px 5px; border:1px solid var(--line); border-radius:10px; background:#fff; color:var(--muted); cursor:pointer; vertical-align: middle; user-select:none; }
+  .c-btn.has { background: var(--accent); color:#fff; border-color: var(--accent); }
+  textarea { display:block; width: 100%; box-sizing: border-box; margin: 4px 0 6px; min-height: 40px; font: 13px/1.4 inherit; padding: 6px; border:1px solid var(--accent); border-radius:4px; background: var(--note); }
+  #bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid var(--line); padding: 10px 24px; display:flex; gap: 12px; align-items:center; box-shadow: 0 -2px 8px rgba(0,0,0,.05); }
+  #bar button { font-size: 14px; padding: 6px 14px; border-radius: 4px; border:1px solid var(--accent); background: var(--accent); color:#fff; cursor:pointer; }
+  #bar button.sec { background:#fff; color: var(--accent); }
+  #status { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Wiki gardener proposal __DATE__</h1>
+  <p class="sub">For each item, click Approve, Reject or Edit. Use the comment buttons for notes on any line. Then click "Copy decisions" and give the text to an agent that follows the wiki gardener <code>apply.md</code> prompt.</p>
+  <div id="items"></div>
+</main>
+<div id="bar">
+  <button id="copy">Copy decisions</button>
+  <button id="clear" class="sec">Clear</button>
+  <span id="status"></span>
+</div>
+<script id="data" type="application/json">__ITEMS_JSON__</script>
+<script>
+(function () {
+  const DATE = '__DATE__';
+  const KEY = 'wiki-gardener-' + DATE;
+  const items = JSON.parse(document.getElementById('data').textContent);
+  const st = JSON.parse(localStorage.getItem(KEY) || '{"decision":{},"edit":{},"comments":{}}');
+  const save = () => localStorage.setItem(KEY, JSON.stringify(st));
+  const root = document.getElementById('items');
+  let n = 0;
+
+  function commentable(el, anchor) {
+    const cid = 'c' + (n++);
+    const btn = document.createElement('span');
+    btn.className = 'c-btn'; btn.textContent = '💬'; btn.title = 'Comment';
+    const box = document.createElement('textarea');
+    box.placeholder = 'Comment on: ' + anchor.slice(0, 80);
+    box.style.display = 'none';
+    if (st.comments[cid]) { box.value = st.comments[cid].text; box.style.display = 'block'; btn.classList.add('has'); }
+    btn.onclick = () => { box.style.display = box.style.display === 'none' ? 'block' : 'none'; };
+    box.oninput = () => {
+      if (box.value.trim()) { st.comments[cid] = { anchor, text: box.value }; btn.classList.add('has'); }
+      else { delete st.comments[cid]; btn.classList.remove('has'); }
+      save();
+    };
+    el.appendChild(btn); el.appendChild(box);
+  }
+  function line(tag, text, parent) {
+    const el = document.createElement(tag); el.textContent = text; parent.appendChild(el); commentable(el, text); return el;
+  }
+  function field(card, label, value) {
+    if (value === undefined || value === null || (Array.isArray(value) && !value.length)) return;
+    const f = document.createElement('div'); f.className = 'field';
+    const b = document.createElement('b'); b.textContent = label; f.appendChild(b);
+    if (Array.isArray(value)) { const ul = document.createElement('ul'); value.forEach(v => line('li', String(v), ul)); f.appendChild(ul); }
+    else line('p', String(value), f);
+    card.appendChild(f);
+  }
+
+  items.forEach(it => {
+    const card = document.createElement('div'); card.className = 'item';
+    const h = document.createElement('h2'); h.textContent = it.id + ': ' + it.summary; card.appendChild(h); commentable(h, it.id + ': ' + it.summary);
+    const tags = document.createElement('div');
+    [it.system, it.type].forEach(t => { const s = document.createElement('span'); s.className = 'tag'; s.textContent = t; tags.appendChild(s); });
+    const r = document.createElement('span'); r.className = 'tag' + (String(it.risk).startsWith('needs') ? ' needs' : ''); r.textContent = it.risk; tags.appendChild(r);
+    card.appendChild(tags);
+    field(card, 'Why', it.why);
+    field(card, 'Evidence', it.evidence);
+    field(card, 'Change', it.change);
+    field(card, 'Depends on', it.depends_on);
+    field(card, 'Verify', it.verify);
+    const d = document.createElement('div'); d.className = 'decide';
+    const edit = document.createElement('textarea'); edit.placeholder = 'Edited change for ' + it.id; edit.style.display = 'none';
+    edit.value = st.edit[it.id] || ''; edit.oninput = () => { st.edit[it.id] = edit.value; save(); };
+    ['approve', 'reject', 'edit'].forEach(k => {
+      const b = document.createElement('button'); b.textContent = k[0].toUpperCase() + k.slice(1); b.className = k;
+      b.onclick = () => { st.decision[it.id] = st.decision[it.id] === k ? undefined : k; save(); paint(); };
+      d.appendChild(b);
+    });
+    function paint() {
+      const k = st.decision[it.id];
+      card.className = 'item' + (k ? ' ' + k : '');
+      d.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.classList.contains(k)));
+      edit.style.display = k === 'edit' ? 'block' : 'none';
+    }
+    card.appendChild(d); card.appendChild(edit); paint();
+    root.appendChild(card);
+  });
+
+  const status = document.getElementById('status');
+  document.getElementById('copy').onclick = async () => {
+    const pick = k => items.filter(it => st.decision[it.id] === k).map(it => it.id);
+    const parts = [];
+    if (pick('approve').length) parts.push('approve ' + pick('approve').join(','));
+    pick('reject').forEach(id => parts.push('reject ' + id));
+    pick('edit').forEach(id => parts.push('edit ' + id + ' (' + (st.edit[id] || '').trim() + ')'));
+    const undecided = items.filter(it => !st.decision[it.id]).map(it => it.id);
+    let text = 'gardener ' + DATE + ': ' + (parts.join('; ') || 'no decisions');
+    if (undecided.length) text += '\nundecided: ' + undecided.join(',');
+    const cs = Object.keys(st.comments).sort((a, b) => +a.slice(1) - +b.slice(1));
+    if (cs.length) text += '\n\ncomments:\n' + cs.map(c => '> ' + st.comments[c].anchor + '\n' + st.comments[c].text.trim()).join('\n\n');
+    try { await navigator.clipboard.writeText(text); }
+    catch (e) { const t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }
+    status.textContent = 'Copied.';
+  };
+  document.getElementById('clear').onclick = () => { if (confirm('Clear all decisions and comments?')) { localStorage.removeItem(KEY); location.reload(); } };
+})();
+</script>
+</body>
+</html>

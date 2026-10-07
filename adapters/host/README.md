@@ -32,6 +32,10 @@ Crontab examples wrap the command in `timeout <interval minus 5 minutes>`, so th
 
 With KiroCrew or OpenClaw, the Owner gives that agent the repo link. It follows `SETUP.md` and creates its own scheduled job.
 
+## Second job: wiki-gardener
+
+With the optional wiki module, the Host runs one more scheduled job: the wiki gardener lint prompt (`modules/wiki/gardener/lint.md`), once a day by default. Each example notes file has it under "Second job: wiki-gardener". It uses the same Host capabilities as the Cycle job, so the Host Contract does not change.
+
 ## Contract map: `cron-claude.md`
 
 | Capability or field | Line in `cron-claude.md` |

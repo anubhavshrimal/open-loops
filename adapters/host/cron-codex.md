@@ -36,7 +36,18 @@ PATH=/usr/local/bin:/usr/bin:/bin
 
 If you change the interval, change the `timeout` to the interval minus 5 minutes.
 
+## Second job: wiki-gardener
+
+Add this job only if the Owner said yes to the wiki module. It is a second scheduled job, next to the Cycle job: it runs the wiki gardener lint prompt once a day (default), proposes fixes where the wiki drifts from the Tracker and the docs, and sends one Notifier message. It never edits the wiki. `{{GARDENER_DIR}}` is `modules/wiki/gardener` in the Open Loops clone, and `{{WIKI_DIR}}` is the wiki directory. The Owner applies the approved items later in an agent session that follows `{{GARDENER_DIR}}/apply.md` (see `modules/wiki/README.md`).
+
+Crontab line (the same `PATH` line as the Cycle job covers it). `timeout 60m` ends a hung run. The lint run writes only in the home directory, so the auto-mode sandbox needs no extra `--add-dir` for it:
+
+```
+0 6 * * * cd {{HOME_DIR}} && timeout 60m codex exec --cd {{HOME_DIR}} --skip-git-repo-check --model {{ORCHESTRATOR_MODEL}} -c model_reasoning_effort={{ORCHESTRATOR_EFFORT}} {{CODEX_PERMISSION_FLAGS}} "Run the wiki gardener. Follow {{GARDENER_DIR}}/lint.md. Wiki: {{WIKI_DIR}}. Home directory: {{HOME_DIR}}." >> {{HOME_DIR}}/wiki-gardener.log 2>&1
+```
+
 ## How to stop and remove
 
 - Pause: comment out the crontab line (`crontab -e`). Live Workers keep running until you stop them with the Runtime.
 - Remove: delete the crontab line, stop the `ol-` Workers with the Runtime, then delete the home directory if you no longer need its state and logs. The Workspaces under `<repo>/.openloops/` are kept.
+- wiki-gardener job: pause or remove its crontab line in the same way.

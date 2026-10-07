@@ -55,7 +55,7 @@ Ask about the Slots in this order, one at a time. For each Slot:
 | Slot | Default | Fallback and other examples | Placeholders to fill |
 |---|---|---|---|
 | Tracker | GitHub Issues: [`tracker/github-issues.md`](adapters/tracker/github-issues.md) | Markdown files (no account): [`tracker/markdown.md`](adapters/tracker/markdown.md) | GitHub Issues: `{{TRACKER_OWNER}}/{{TRACKER_REPO}}` (the repo that holds the Tasks; it can differ from the project repo). Markdown: `{{TRACKER_DIR}}` (default `<home>/tasks`; make the directory). |
-| Host | cron + `claude -p`: [`host/cron-claude.md`](adapters/host/cron-claude.md) | cron + `codex exec`: [`host/cron-codex.md`](adapters/host/cron-codex.md); [KiroCrew](adapters/host/kirocrew.md); [OpenClaw](adapters/host/openclaw.md) | `{{HOME_DIR}}`, `{{CORE_DIR}}`, `{{ORCHESTRATOR_MODEL}}`, `{{ORCHESTRATOR_EFFORT}}` (where the example has it), the permission mode (`{{PERMISSION_MODE}}` or `{{CODEX_PERMISSION_FLAGS}}`), and the interval (default 30 minutes). |
+| Host | cron + `claude -p`: [`host/cron-claude.md`](adapters/host/cron-claude.md) | cron + `codex exec`: [`host/cron-codex.md`](adapters/host/cron-codex.md); [KiroCrew](adapters/host/kirocrew.md); [OpenClaw](adapters/host/openclaw.md) | `{{HOME_DIR}}`, `{{CORE_DIR}}`, `{{ORCHESTRATOR_MODEL}}`, `{{ORCHESTRATOR_EFFORT}}` (where the example has it), the permission mode (`{{PERMISSION_MODE}}` or `{{CODEX_PERMISSION_FLAGS}}`), and the interval (default 30 minutes). With the wiki module (step 5): `{{GARDENER_DIR}}` and `{{WIKI_DIR}}`. |
 | Runtime | Herdr (recommended, if `herdr` is installed): [`runtime/herdr.md`](adapters/runtime/herdr.md) | tmux: [`runtime/tmux.md`](adapters/runtime/tmux.md) | `{{WORKER_MODEL}}`, `{{PERMISSION_MODE}}`, `{{HOME_DIR}}`, `{{EXTRA_DIRS}}` (one `--add-dir <path>` for the home directory, the Markdown Task directory if any, and each directory that holds Specs). The agent: Claude Code or Codex (each example has a "Codex agent" section). The cap on live Workers (default 5). |
 | Notifier | The log file: [`notifier/log-file.md`](adapters/notifier/log-file.md) | The Host's own messaging (KiroCrew, OpenClaw) or a messaging MCP server: see [`notifier/README.md`](adapters/notifier/README.md) | `{{NOTIFIER_LOG}}` (default `<home>/notifications.log`). |
 | Review System | GitHub PR (if the project's `origin` is on GitHub and `gh` is logged in): [`review/github-pr.md`](adapters/review/github-pr.md) | Local branch (no hosting service): [`review/local-branch.md`](adapters/review/local-branch.md) | From step 4: `{{PROJECT_REPO}}`, `{{BUILD_TEST_COMMAND}}`, and for GitHub PR `{{OWNER}}/{{REPO}}`. "Open PRs as": draft (default) or ready. |
@@ -136,11 +136,12 @@ On "yes":
 4. **Let the Workers read the wiki.** If `<wiki>` is not under a directory of `{{EXTRA_DIRS}}` in `<home>/runtime.md`, add an `--add-dir <wiki>` for it.
    If the Owner said yes to capture, recommend `<wiki>/raw/ideas` for `{{IDEAS_DIR}}` and `<wiki>/wiki/projects/sources` for `{{SPECS_DIR}}`, where the manual keeps them; with the Owner's yes, change them in `<home>/capture.md`.
 5. **Tell the Owner the `Spec:` rule.** A Task's `Spec:` line may point to a wiki page: `Spec: <wiki>/wiki/projects/sources/<name>.md`, made from `<wiki>/wiki/.templates/build-spec.md` or `exploration-spec.md`. Without a `Spec:` line, the Task body is the Spec, as before. An agent session in `<wiki>` follows `<wiki>/AGENTS.md` (Claude Code reads it through `<wiki>/CLAUDE.md`).
+6. **wiki-gardener.** Keep the "Second job: wiki-gardener" section of the chosen Host example in `<home>/host.md` (step 6 fills `{{GARDENER_DIR}}` = `<clone>/modules/wiki/gardener` and `{{WIKI_DIR}}` = `<wiki>`; step 8 starts the job, default once a day). Tell the Owner how to apply a proposal: "wiki-gardener" in `modules/wiki/README.md`.
 
 ## 6. Write the notes files
 
 1. Make the home directory: `mkdir -p <home>`.
-2. For each Slot, copy the chosen example to its notes file name in the home directory, then replace each `{{...}}` placeholder with the value from steps 3 and 4:
+2. For each Slot, copy the chosen example to its notes file name in the home directory, then replace each `{{...}}` placeholder with the value from steps 3, 4 and 5:
 
    | Notes file | From |
    |---|---|
@@ -150,7 +151,7 @@ On "yes":
    | `<home>/notifier.md` | the chosen `adapters/notifier/*.md` |
    | `<home>/review.md` | the chosen `adapters/review/*.md` |
 
-3. Edit the copies for the Owner's answers that are not placeholders: a Follow-up prefix other than `ACTION:` (in `tracker.md`; it is the same prefix everywhere), an interval other than 30 minutes (in `host.md`: the cron schedule, the "Interval" line, and the `timeout`, which stays the interval minus 5 minutes), `ready` instead of `draft` (in `review.md`), a cap other than 5 (in `runtime.md`), the "Codex agent" command if the Workers run Codex.
+3. Edit the copies for the Owner's answers that are not placeholders: a Follow-up prefix other than `ACTION:` (in `tracker.md`; it is the same prefix everywhere), an interval other than 30 minutes (in `host.md`: the cron schedule, the "Interval" line, and the `timeout`, which stays the interval minus 5 minutes), `ready` instead of `draft` (in `review.md`), a cap other than 5 (in `runtime.md`), the "Codex agent" command if the Workers run Codex. Without the wiki module, delete the "Second job: wiki-gardener" section and its line in "How to stop and remove" from `host.md`.
 4. Check that no placeholder is left: `grep -n '{{' <home>/*.md` prints nothing.
 5. Install the core agents where the Workers find them: `mkdir -p <home>/.claude/agents && cp <core>/agents/*.md <home>/.claude/agents/`.
 
@@ -190,6 +191,7 @@ These are separate projects with their own licenses. They are downloaded to the 
 2. Start the Host as `<home>/host.md` says in "How a Cycle starts":
    - **cron + `claude -p` or `codex exec`:** add the crontab line from `host.md`, with the `PATH=` line above it, only if no line with "Run one Open Loops Cycle" for this home directory is already there: `(crontab -l 2>/dev/null; cat <file with the two lines>) | crontab -`. Show the Owner `crontab -l` after.
    - **KiroCrew or OpenClaw:** create your own scheduled job with the command in `host.md`, and write its id into `host.md` ("How to stop and remove" uses it).
+   - **wiki-gardener** (only if `host.md` has "Second job: wiki-gardener"): start that job in the same way, only if no job with "Run the wiki gardener" for this home directory is already there.
 
 ## 9. Verify with the sample Task
 

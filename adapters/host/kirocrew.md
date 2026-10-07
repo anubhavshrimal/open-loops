@@ -28,7 +28,20 @@ kirocrew cron add "open-loops-cycle" "Run one Open Loops Cycle. Follow {{CORE_DI
 - Timeout: `--timeout-secs 1500` ends a hung Cycle after 25 minutes (the interval minus 5 minutes), so Cycles cannot pile up. If you change the interval, change the timeout too.
 - Notifier: the job output goes to the Owner's KiroCrew chat by default. To use that chat as the Notifier, write a `notifier.md` that names the agent's send-message tool.
 
+## Second job: wiki-gardener
+
+Add this job only if the Owner said yes to the wiki module. It is a second scheduled job, next to the Cycle job: it runs the wiki gardener lint prompt once a day (default), proposes fixes where the wiki drifts from the Tracker and the docs, and sends one Notifier message. It never edits the wiki. `{{GARDENER_DIR}}` is `modules/wiki/gardener` in the Open Loops clone, and `{{WIKI_DIR}}` is the wiki directory. The Owner applies the approved items later in an agent session that follows `{{GARDENER_DIR}}/apply.md` (see `modules/wiki/README.md`).
+
+One more scheduled job, once a day, each run a new session. `--timeout-secs 3600` ends a hung run after 60 minutes:
+
+```sh
+kirocrew cron add "open-loops-wiki-gardener" "Run the wiki gardener. Follow {{GARDENER_DIR}}/lint.md. Wiki: {{WIKI_DIR}}. Home directory: {{HOME_DIR}}." --every 86400 --timeout-secs 3600 --model {{ORCHESTRATOR_MODEL}} --no-persistent-session --approval-mode auto
+```
+
+To apply, the Owner pastes the text from "Copy decisions" into the KiroCrew chat with: "Follow {{GARDENER_DIR}}/apply.md."
+
 ## How to stop and remove
 
 - Pause: `kirocrew cron pause <id>` (`kirocrew cron list` shows the id). Resume with `kirocrew cron resume <id>`. Live Workers keep running until you stop them with the Runtime.
 - Remove: `kirocrew cron remove <id>`, stop the `ol-` Workers with the Runtime, then delete the home directory if you no longer need its state and logs. The Workspaces under `<repo>/.openloops/` are kept.
+- wiki-gardener job: pause or remove the `open-loops-wiki-gardener` job in the same way.

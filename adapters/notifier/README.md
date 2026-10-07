@@ -6,7 +6,7 @@ The Notifier delivers messages to the Owner. There is one Notifier.
 
 - [ ] Send one text message to the Owner.
 
-The core sends one message for each of these events: `spawned`, `respawned` (with its trigger), `input_requested`, `blocked`, `in_review`, `done`, `unblocked`, `system_alert`, `system_recovered`. Dedup and silence are core rules, not Notifier rules: the core sends no message when nothing happened, and never the same message twice. A send failure is logged in `orchestrator.log` and never stops the Cycle. Messages give file paths, with no link base.
+The core sends one message for each of these events: `spawned`, `respawned` (with its trigger), `input_requested`, `blocked`, `in_review`, `done`, `unblocked`, `system_alert`, `system_recovered`. Dedup and silence are core rules, not Notifier rules: the core sends no message when nothing happened, and never the same message twice. A send failure is logged in `orchestrator.log` and never stops the Cycle. With the wiki module, wiki-gardener also sends one `wiki_gardener` message for each proposal (see `modules/wiki/gardener/lint.md`). Messages give file paths, with no link base.
 
 `notifier.md` says which tool sends a message, and how.
 

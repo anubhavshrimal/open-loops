@@ -149,6 +149,8 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runti
         "SPEC_DIR": str(sb.specs),
         "HOME_DIR": str(sb.home),
         "CORE_DIR": str(REPO / "core"),
+        "GARDENER_DIR": str(REPO / "modules/wiki/gardener"),
+        "WIKI_DIR": str(root / "wiki"),
         "NOTIFIER_LOG": str(sb.notifier_log),
         "WORKER_MODEL": worker_model,
         "ORCHESTRATOR_MODEL": orchestrator_model,
