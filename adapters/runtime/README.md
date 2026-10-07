@@ -27,7 +27,26 @@ Rules that the core applies to every Runtime: Worker names are `ol-<slug>`; a Wo
 
 | Example | Runtime |
 |---|---|
-| [`tmux.md`](tmux.md) | tmux with Claude Code (local fallback) |
+| [`herdr.md`](herdr.md) | Herdr with Claude Code or Codex (recommended) |
+| [`tmux.md`](tmux.md) | tmux with Claude Code or Codex (local fallback) |
+
+Each example starts Claude Code Workers, and its "Codex agent" section gives the lines for Codex Workers.
+
+## Contract map: `herdr.md`
+
+| Capability | Line in `herdr.md` |
+|---|---|
+| Spawn a named Worker (agent, model, directory, first prompt) | "Spawn a Worker": `herdr agent start ol-<slug>`, `herdr agent prompt ol-<slug>` |
+| List the Workers with status | "List Workers with status": `herdr agent list` |
+| Read recent output | "Read recent output": `herdr agent read ol-<slug> --source visible --lines 40` |
+| Send text or keys | "Send text or keys to a live Worker": `herdr agent send-keys ol-<slug> 1` |
+| Stop a Worker | "Stop a Worker": `herdr workspace close <workspace_id>` |
+| Core statuses | "List Workers with status": the table that maps `agent_status` to each core status |
+| Agent, model, extras | "Agent", "Worker model", "Build Spec prefix", `--agent <name>`, "Codex agent" |
+| Input Request keys | "Send text or keys to a live Worker": "one-shot approve", "deny", "Never send" |
+| Runtime ids | "Runtime ids to store in `state.json`" |
+| Worktrees | "Herdr makes worktrees itself", `herdr worktree create` |
+| Cap | "Cap on live Workers" line |
 
 ## Contract map: `tmux.md`
 
@@ -39,7 +58,7 @@ Rules that the core applies to every Runtime: Worker names are `ol-<slug>`; a Wo
 | Send text or keys | "Send text or keys to a live Worker" |
 | Stop a Worker | "Stop a Worker" |
 | Core statuses | "List Workers with status": the four status rules |
-| Agent, model, extras | "Agent", "Worker model", "Build Spec prefix", `--agent <name>` |
+| Agent, model, extras | "Agent", "Worker model", "Build Spec prefix", `--agent <name>`, "Codex agent" |
 | Input Request keys | "Send text or keys to a live Worker": "one-shot approve", "deny", "Never send" |
 | Runtime ids | "Runtime ids to store in `state.json`" |
 | Worktrees | "Workspaces" line |

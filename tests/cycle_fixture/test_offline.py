@@ -152,6 +152,16 @@ class SpecTemplatesTest(unittest.TestCase):
         self.assertTrue((REPO / "core/agents/auto-researcher.md").exists())
 
 
+class HerdrSandboxTest(unittest.TestCase):
+    def test_herdr_runtime_fills_the_herdr_notes_file(self):
+        with tempfile.TemporaryDirectory(prefix="openloops-offline-") as tmp:
+            sb = run_fixture.build_sandbox(Path(tmp), "sonnet", "sonnet", "auto", runtime="herdr")
+            runtime_md = (sb.home / "runtime.md").read_text()
+        self.assertNotRegex(runtime_md, r"\{\{[A-Z_]+\}\}")
+        self.assertIn("herdr agent start ol-<slug> --kind claude", runtime_md)
+        self.assertIn(f"--add-dir {sb.tracker}", runtime_md)
+
+
 class CoreIsAgentNeutralTest(unittest.TestCase):
     SLOT_PRODUCTS = re.compile(r"asana|github|herdr|tmux|slack|gitlab|linear|claude|codex|kirocrew|openclaw", re.I)
 

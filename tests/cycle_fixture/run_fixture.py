@@ -2,7 +2,7 @@
 """Cycle fixture: run real Open Loops Cycles against a sandbox with the local fallbacks.
 
 Scenario 1 (`build`): a Ready Task with a trivial Build Spec is spawned as the tmux
-Worker `ol-hello-file`, gets a state.json record and a `spawned` Notifier line, reaches
+Worker `ol-hello-file` (a Herdr Worker with --runtime herdr), gets a state.json record and a `spawned` Notifier line, reaches
 In Review with a commit on its branch and a Tracker comment that names the branch,
 and its Worker is closed.
 
@@ -21,6 +21,7 @@ It checks only files, git refs and tmux sessions, never the agent's wording.
 
 import argparse
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -98,7 +99,15 @@ def git(*args, cwd=None, check=True):
     return subprocess.run(["git", *args], cwd=cwd, check=check, capture_output=True, text=True)
 
 
-def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scenario=None):
+RUNTIMES = ("tmux", "herdr")
+HERDR_SESSION = "openloops-fixture"
+
+
+def notes_files(runtime):
+    return {**NOTES_FILES, "runtime.md": REPO / f"adapters/runtime/{runtime}.md"}
+
+
+def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scenario=None, runtime="tmux"):
     scenario = scenario or SCENARIOS["build"]
     sb = Sandbox(
         scenario=scenario,
@@ -140,7 +149,7 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scena
         "BUILD_TEST_COMMAND": "sh check.sh",
         "EXTRA_DIRS": f"--add-dir {sb.tracker} --add-dir {sb.home} --add-dir {sb.specs}",
     }
-    for name, source in NOTES_FILES.items():
+    for name, source in notes_files(runtime).items():
         (sb.home / name).write_text(render(source.read_text(), values))
     # Setup step: install the core agents where the Worker's --add-dir of the home directory finds them.
     agents = sb.home / ".claude" / "agents"
@@ -189,11 +198,83 @@ def tmux_sessions():
     return out.stdout.split() if out.returncode == 0 else []
 
 
-def pane_command(session):
+def herdr_json(*args):
+    out = subprocess.run(["herdr", *args], capture_output=True, text=True)
+    try:
+        return json.loads(out.stdout)["result"]
+    except (ValueError, KeyError, TypeError):
+        return None
+
+
+def herdr_agents():
+    """Agent names in `herdr agent list`, or None if the Herdr server does not answer."""
+    result = herdr_json("agent", "list")
+    return None if result is None else [a["name"] for a in result["agents"] if a.get("name")]
+
+
+def workers(runtime):
+    """Names that the Runtime lists (tmux sessions or Herdr agents). Fails if Herdr does not answer,
+    so that a dead server never passes as "the Worker is closed"."""
+    if runtime == "herdr":
+        names = herdr_agents()
+        if names is None:
+            raise RuntimeError(f"the Herdr session {HERDR_SESSION} does not answer `herdr agent list`")
+        return names
+    return tmux_sessions()
+
+
+def pane_command(runtime, worker):
+    """The command line that started the Worker's agent."""
+    if runtime == "herdr":
+        agent = herdr_json("agent", "get", worker) or {}
+        pane = agent.get("agent", {}).get("pane_id", "")
+        info = herdr_json("pane", "process-info", "--pane", pane) or {}
+        return " ".join(p.get("cmdline", "") for p in info.get("process_info", {}).get("foreground_processes", []))
     out = subprocess.run(
-        ["tmux", "list-panes", "-t", session, "-F", "#{pane_start_command}"], capture_output=True, text=True
+        ["tmux", "list-panes", "-t", worker, "-F", "#{pane_start_command}"], capture_output=True, text=True
     )
     return out.stdout.strip() if out.returncode == 0 else ""
+
+
+def start_herdr_session():
+    """Start the named Herdr session HERDR_SESSION as its own server, and point every herdr command
+    of this process and its children (the Cycles) at it, so that the fixture never sees or touches
+    the Owner's own Herdr agents. Returns an error text, or None."""
+    # Delete a stopped session from an earlier run, so that no old workspace comes back.
+    subprocess.run(["herdr", "session", "delete", HERDR_SESSION], capture_output=True)
+    # A pane starts from the server's environment. Start the server with a clean login-like
+    # environment, so that the Workers do not inherit the variables of the agent session that runs
+    # this fixture (and a shell profile sees a plain terminal).
+    clean_env = {k: os.environ[k] for k in ("HOME", "USER", "LOGNAME", "SHELL", "PATH", "LANG") if k in os.environ}
+    subprocess.Popen(
+        ["herdr", "--session", HERDR_SESSION, "server"],
+        env=clean_env,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    socket = None
+    for _ in range(20):
+        time.sleep(0.5)
+        rows = subprocess.run(["herdr", "session", "list"], capture_output=True, text=True).stdout.splitlines()
+        row = next((r.split() for r in rows if r.split()[:2] == [HERDR_SESSION, "running"]), None)
+        if row:
+            socket = row[-1]
+            break
+    if socket is None:
+        return f"the Herdr session {HERDR_SESSION} did not start"
+    for key in ("HERDR_PANE_ID", "HERDR_TAB_ID", "HERDR_WORKSPACE_ID"):
+        os.environ.pop(key, None)
+    os.environ["HERDR_SOCKET_PATH"] = socket
+    return None if herdr_agents() is not None else f"the Herdr session {HERDR_SESSION} does not answer"
+
+
+def stop_hint(runtime, worker):
+    return f"herdr session stop {HERDR_SESSION}" if runtime == "herdr" else f"tmux kill-session -t {worker}"
+
+
+def attach_hint(runtime, worker):
+    return f"herdr session attach {HERDR_SESSION}" if runtime == "herdr" else f"tmux attach -t {worker}"
 
 
 def read_state(sb):
@@ -233,13 +314,14 @@ class Checks:
         return all(ok for _, ok, _ in self.results)
 
 
-def spawn_checks(sb, checks):
+def spawn_checks(sb, checks, runtime):
     worker = sb.scenario.worker
     state = read_state(sb) or {}
-    checks.check(f"tmux Worker {worker} exists after Cycle 1", worker in tmux_sessions(), str(tmux_sessions()))
+    live = workers(runtime)
+    checks.check(f"{runtime} Worker {worker} exists after Cycle 1", worker in live, str(live))
     checks.check(f"state.json has a record for {worker}", worker in state, str(list(state)))
     if sb.scenario.agent:
-        command = pane_command(worker)
+        command = pane_command(runtime, worker)
         checks.check(
             f"Worker {worker} started with --agent {sb.scenario.agent}",
             f"--agent {sb.scenario.agent}" in command,
@@ -294,7 +376,7 @@ SCENARIOS = {
 }
 
 
-def final_checks(sb, checks):
+def final_checks(sb, checks, runtime):
     worker = sb.scenario.worker
     checks.check("Task is In Review", task_state(sb) == "In Review", task_state(sb))
     comments = task_comments(sb)
@@ -304,7 +386,8 @@ def final_checks(sb, checks):
     branch_log = git("log", "--oneline", f"main..{worker}", cwd=sb.project, check=False).stdout.strip()
     checks.check(f"branch {worker} has a commit that is not in main", branch_log, "no commits")
     sb.scenario.result_checks(sb, checks)
-    checks.check(f"Worker {worker} is closed", worker not in tmux_sessions(), str(tmux_sessions()))
+    live = workers(runtime)
+    checks.check(f"Worker {worker} is closed", worker not in live, str(live))
     errors = state_errors(sb)
     checks.check("state.json still validates", not errors, "; ".join(errors))
     log = (sb.home / "orchestrator.log").read_text() if (sb.home / "orchestrator.log").exists() else ""
@@ -322,6 +405,7 @@ def wait_for(predicate, seconds, poll=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--runtime", choices=RUNTIMES, default="tmux", help="example runtime.md to use")
     parser.add_argument("--scenario", choices=sorted(SCENARIOS), default="build", help="which scenario to run")
     parser.add_argument("--setup-only", action="store_true", help="build the sandbox, print its paths, run no Cycle")
     parser.add_argument("--orchestrator-model", default="sonnet")
@@ -336,26 +420,32 @@ def main():
     parser.add_argument("--cycle-timeout-minutes", type=float, default=26, help="kill one Cycle after this time")
     args = parser.parse_args()
 
-    for tool in ("git", "tmux", "timeout") + (() if args.setup_only else ("claude",)):
+    for tool in ("git", args.runtime, "timeout") + (() if args.setup_only else ("claude",)):
         if shutil.which(tool) is None:
             sys.exit(f"[fixture] missing tool: {tool}")
 
     root = Path(tempfile.mkdtemp(prefix="openloops-fixture-"))
     scenario = SCENARIOS[args.scenario]
     worker = scenario.worker
-    sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode, scenario)
+    sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode, scenario, args.runtime)
     command = cycle_command((sb.home / "host.md").read_text())
     print(f"[fixture] sandbox: {sb.root}")
-    print(f"[fixture] attach to the Worker: tmux attach -t {worker}")
+    print(f"[fixture] Runtime: {args.runtime}; attach to the Worker: {attach_hint(args.runtime, worker)}")
     print(f"[fixture] Cycle command: {command}")
     if args.setup_only:
         return 0
-    if worker in tmux_sessions():
-        sys.exit(f"[fixture] a tmux session {worker} already exists; stop it first: tmux kill-session -t {worker}")
-    # Workers start from the tmux server's environment, so the server must run outside any agent
-    # sandbox. Start it from here if it is not running, and stop only that helper session at the end.
+    if args.runtime == "herdr":
+        error = start_herdr_session()
+        if error:
+            sys.exit(f"[fixture] {error}")
+    if worker in workers(args.runtime):
+        sys.exit(f"[fixture] a Worker {worker} already exists; stop it first: {stop_hint(args.runtime, worker)}")
+    # Workers start from the Runtime server's environment, so the server must run outside any agent
+    # sandbox. For tmux, start it from here if it is not running, and stop only that helper session
+    # at the end. For Herdr, the fixture's own session (started above) is stopped at the end if the
+    # scenario passes.
     helper = None
-    if not tmux_sessions():
+    if args.runtime == "tmux" and not tmux_sessions():
         helper = "openloops-fixture-server"
         subprocess.run(["tmux", "new-session", "-d", "-s", helper], check=True)
 
@@ -364,7 +454,7 @@ def main():
     cycle_timeout = args.cycle_timeout_minutes * 60
 
     run_cycle(sb, 1, command, cycle_timeout)
-    spawn_checks(sb, checks)
+    spawn_checks(sb, checks, args.runtime)
 
     cycle = 1
     while time.time() < deadline:
@@ -374,16 +464,18 @@ def main():
             break
         cycle += 1
         run_cycle(sb, cycle, command, cycle_timeout)
-        if task_state(sb) == "In Review" and worker not in tmux_sessions():
+        if task_state(sb) == "In Review" and worker not in workers(args.runtime):
             break
 
-    final_checks(sb, checks)
+    final_checks(sb, checks, args.runtime)
     print(f"[fixture] Cycles run: {cycle}")
-    print(f"[fixture] SCENARIO {scenario.number} ({args.scenario}) {'PASSED' if checks.passed else 'FAILED'}")
+    print(f"[fixture] SCENARIO {scenario.number} ({args.scenario}) {'PASSED' if checks.passed else 'FAILED'} (Runtime: {args.runtime})")
     if helper:
         subprocess.run(["tmux", "kill-session", "-t", helper], capture_output=True)
+    if args.runtime == "herdr" and checks.passed:
+        subprocess.run(["herdr", "session", "stop", HERDR_SESSION], capture_output=True)
     if not checks.passed:
-        print(f"[fixture] inspect: {sb.root}; stop a leftover Worker: tmux kill-session -t {worker}")
+        print(f"[fixture] inspect: {sb.root}; stop a leftover Worker: {stop_hint(args.runtime, worker)}")
     return 0 if checks.passed else 1
 
 

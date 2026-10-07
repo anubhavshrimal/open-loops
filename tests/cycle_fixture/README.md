@@ -48,7 +48,15 @@ python3 tests/cycle_fixture/run_fixture.py                          # scenario 1
 python3 tests/cycle_fixture/run_fixture.py --scenario exploration   # scenario 2
 ```
 
-Options: `--orchestrator-model`, `--worker-model` (default `sonnet`), `--permission-mode` (default `bypassPermissions`: in `auto` mode the Orchestrator's classifier can deny the keys it sends to answer a Worker's prompts, and the Worker then never starts), `--timeout-minutes` (default 45), `--interval-seconds` between Cycles (default 120). `--setup-only` builds the sandbox and prints its paths with no Cycle.
+### Herdr instead of tmux
+
+```sh
+python3 tests/cycle_fixture/run_fixture.py --runtime herdr --permission-mode auto
+```
+
+`--runtime herdr` puts the example `adapters/runtime/herdr.md` in the home directory instead of `tmux.md`. Scenario 1 and its checks stay the same; the Worker list is `herdr agent list`. Needs `herdr` in place of `tmux`. The fixture starts its own Herdr session `openloops-fixture` (a separate Herdr server, with a clean environment) and points every `herdr` command of the Cycles at it, so that the fixture never sees or touches your own Herdr agents. Watch the Worker with `herdr session attach openloops-fixture`. The fixture stops the session when the scenario passes, and keeps it for inspection when it fails (stop it with `herdr session stop openloops-fixture`).
+
+Options: `--runtime` (`tmux` or `herdr`, default `tmux`), `--orchestrator-model`, `--worker-model` (default `sonnet`), `--permission-mode` (default `bypassPermissions`: in `auto` mode the Orchestrator's classifier can deny the keys it sends to answer a Worker's prompts, and the Worker then never starts), `--timeout-minutes` (default 45), `--interval-seconds` between Cycles (default 120). `--setup-only` builds the sandbox and prints its paths with no Cycle.
 
 The fixture prints `SCENARIO <n> (<name>) PASSED` and exits 0, or prints each failed check and exits 1. It keeps the sandbox for inspection and prints its path.
 

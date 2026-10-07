@@ -22,7 +22,7 @@ Each Cycle is a new `claude -p` session that reads the core Orchestrator prompt.
 cd {{HOME_DIR}} && timeout 25m claude -p "Run one Open Loops Cycle. Follow {{CORE_DIR}}/orchestrator.md. Home directory: {{HOME_DIR}}." --model {{ORCHESTRATOR_MODEL}} --permission-mode {{PERMISSION_MODE}} >> {{HOME_DIR}}/host.log 2>&1
 ```
 
-Crontab line (`crontab -e`; cron has a short `PATH`, so set it to include `claude`, `git` and `tmux`):
+Crontab line (`crontab -e`; cron has a short `PATH`, so set it to include `claude`, `git` and the Runtime's CLI, `herdr` or `tmux`):
 
 ```
 PATH=/usr/local/bin:/usr/bin:/bin

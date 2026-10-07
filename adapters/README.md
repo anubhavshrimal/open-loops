@@ -5,8 +5,8 @@ An Adapter is the Owner's own tools for one Slot, plus the notes file that tells
 | Slot | Notes file | Contract | Examples |
 |---|---|---|---|
 | Tracker | `tracker.md` | [tracker/README.md](tracker/README.md) | [Markdown](tracker/markdown.md) |
-| Host | `host.md` | [host/README.md](host/README.md) | [cron + `claude -p`](host/cron-claude.md) |
-| Runtime | `runtime.md` | [runtime/README.md](runtime/README.md) | [tmux](runtime/tmux.md) |
+| Host | `host.md` | [host/README.md](host/README.md) | [cron + `claude -p`](host/cron-claude.md), [cron + `codex exec`](host/cron-codex.md), [KiroCrew](host/kirocrew.md), [OpenClaw](host/openclaw.md) |
+| Runtime | `runtime.md` | [runtime/README.md](runtime/README.md) | [Herdr](runtime/herdr.md) (recommended), [tmux](runtime/tmux.md) |
 | Notifier | `notifier.md` | [notifier/README.md](notifier/README.md) | [log file](notifier/log-file.md) |
 | Review System | `review.md` | [review/README.md](review/README.md) | [Local branch](review/local-branch.md) |
 

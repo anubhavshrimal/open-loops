@@ -6,7 +6,7 @@ Runtime: tmux, one detached tmux session per Worker, on the Owner's default tmux
 
 tmux server: the default server must already run before a Cycle starts, started from the Owner's own shell (or the Host), never by the Orchestrator. A new session starts from the server's environment, so a server that an agent's sandboxed shell started passes that sandbox to every Worker, and the Workers then fail. If `tmux ls` says that no server is running, treat it as a Runtime tool failure.
 
-Agent: Claude Code (`claude`), interactive, in auto permission mode.
+Agent: Claude Code (`claude`), interactive, in auto permission mode. For Codex, see "Codex agent".
 
 Worker model: `{{WORKER_MODEL}}`
 
@@ -82,3 +82,20 @@ tmux kill-session -t ol-<slug>
 ```
 
 This ends the agent process. The Workspace and the branch stay.
+
+## Codex agent
+
+To run Codex (`codex`) Workers instead of Claude Code, change the command in "Spawn a Worker" step 2 to:
+
+```sh
+tmux new-session -d -s ol-<slug> -x 220 -y 50 -c <workspace-path> \
+  'codex --model {{WORKER_MODEL}} --sandbox workspace-write --ask-for-approval never -c sandbox_workspace_write.network_access=true {{EXTRA_DIRS}} "$(cat <workspace>/.openloops/<slug>/first-prompt.md)"'
+```
+
+- Model flag: `--model <model>`. Effort: add `-c model_reasoning_effort=<level>`.
+- Auto mode: `--sandbox workspace-write --ask-for-approval never`. Codex then runs commands in its sandbox and never asks for approval, so a Codex Worker rarely shows an Input Request. The sandbox can write only in the Workspace and in each `--add-dir`. `-c sandbox_workspace_write.network_access=true` lets the Worker push its branch and open the PR; with the Local branch Review System you can leave it out. Bypass mode is `--dangerously-bypass-approvals-and-sandbox`: use it only on a machine that is itself a sandbox.
+- Extra directories: `{{EXTRA_DIRS}}` uses the same `--add-dir <path>` flag. For Codex, also add the project repo: a commit in a worktree writes into the project repo's `.git` directory, which is outside the sandbox.
+- Build Spec prefix: none. Leave it out.
+- Exploration Spec with `agent: <name>`: Codex has no agent flag. Start the first prompt with "Act as the agent in `<agents-dir>/<name>.md`." (the path of that agent's instructions file).
+- Status: `working` when the output shows `esc to interrupt`; the other status rules are the same.
+- Input Request: read the menu and choose the option that approves this one time; never choose an option that approves for the rest of the session or always.
