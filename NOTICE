@@ -19,3 +19,8 @@ Use: The Worker rules use `verification-before-completion`, `systematic-debuggin
 herdrdev/herdr (https://github.com/herdrdev/herdr)
 License: Apache-2.0
 Use: The recommended Runtime. The Owner installs the `herdr` program from its own docs.
+
+tobi/qmd (https://github.com/tobi/qmd)
+Copyright (c) 2024-2026 Tobi Lutke
+License: MIT
+Use: Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs.

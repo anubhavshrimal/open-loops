@@ -114,6 +114,29 @@ On "yes":
 2. In the two copied `SKILL.md` files, replace `{{CORE_DIR}}` with `<core>`. Check: `grep -rn '{{' <skills dir>/spec-task <skills dir>/spec-exploration` prints nothing.
 3. Install the `domain-modeling` skill from [mattpocock/skills](https://github.com/mattpocock/skills): the two skills use its glossary and ADR formats. Claude Code: the `mattpocock-skills` plugin of step 7 holds it. Other agents: `npx skills add mattpocock/skills --skill domain-modeling -g -y --agent <npx agents>`. If the install fails, tell the Owner and go on.
 
+### wiki
+
+**Question:** "Do you want the wiki module? A central LLM wiki for your Specs, decisions, glossary terms and results, shared by all your projects. Open Loops works without it; with it, a Task's `Spec:` line can point to a Spec page in the wiki. (yes/no, default no)" Details: [`modules/wiki/README.md`](modules/wiki/README.md).
+
+On "yes":
+
+1. **Wiki directory.** Ask for its absolute path. Default `~/llm-wiki`. Do not put it in `<home>`: removal deletes `<home>`, and the wiki holds the Owner's knowledge. If the directory already has an `AGENTS.md` or `agents.md`, it is an existing wiki: use it as it is and go to step 4.
+2. **Make the wiki.** Copy the scaffold without overwriting a file, add the two Spec templates, and make the first directories:
+
+   ```sh
+   mkdir -p <wiki>
+   cp -Rn <clone>/modules/wiki/scaffold/. <wiki>/ || true
+   cp -n <core>/templates/build-spec.md <core>/templates/exploration-spec.md <wiki>/wiki/.templates/ || true
+   mkdir -p <wiki>/raw <wiki>/wiki/projects/hubs <wiki>/wiki/projects/sources
+   [ -d <wiki>/.git ] || git -C <wiki> init -q
+   ```
+
+   `cp -n` never overwrites a file; some `cp` versions exit non-zero when they skip one, so `|| true` keeps going. Append an `init` entry to `<wiki>/wiki/log.md` in the format of `AGENTS.md` §8. Show the Owner the example wiki in `<clone>/modules/wiki/example/`; do not copy it.
+3. **Search (optional).** Tell the Owner that qmd gives fast wiki search and is optional: without it, the agents search with `grep`. To add it later, the Owner follows "Search" in `modules/wiki/README.md`.
+4. **Let the Workers read the wiki.** If `<wiki>` is not under a directory of `{{EXTRA_DIRS}}` in `<home>/runtime.md`, add an `--add-dir <wiki>` for it.
+   If the Owner said yes to capture, recommend `<wiki>/raw/ideas` for `{{IDEAS_DIR}}` and `<wiki>/wiki/projects/sources` for `{{SPECS_DIR}}`, where the manual keeps them; with the Owner's yes, change them in `<home>/capture.md`.
+5. **Tell the Owner the `Spec:` rule.** A Task's `Spec:` line may point to a wiki page: `Spec: <wiki>/wiki/projects/sources/<name>.md`, made from `<wiki>/wiki/.templates/build-spec.md` or `exploration-spec.md`. Without a `Spec:` line, the Task body is the Spec, as before. An agent session in `<wiki>` follows `<wiki>/AGENTS.md` (Claude Code reads it through `<wiki>/CLAUDE.md`).
+
 ## 6. Write the notes files
 
 1. Make the home directory: `mkdir -p <home>`.
@@ -154,6 +177,7 @@ What it installs, and the credits (made from [`third-party.json`](third-party.js
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
 | [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
 | [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `herdr` program from its own docs. Not installed by setup. |
+| [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->
 
 These are separate projects with their own licenses. They are downloaded to the Owner's machine when setup runs. They are not part of this repository.

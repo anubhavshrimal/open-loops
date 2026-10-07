@@ -1,0 +1,9 @@
+{
+  "name": "llm-wiki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Personal knowledge wiki maintained by LLM agents",
+  "dependencies": {
+    "@tobilu/qmd": "^2.1.0"
+  }
+}

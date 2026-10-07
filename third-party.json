@@ -39,6 +39,17 @@
       "used_for": "The recommended Runtime. The Owner installs the `herdr` program from its own docs.",
       "skills": [],
       "install": {}
+    },
+    {
+      "name": "tobi/qmd",
+      "repo": "https://github.com/tobi/qmd",
+      "author": "Tobi Lutke",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2024-2026 Tobi Lutke",
+      "optional": true,
+      "used_for": "Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs.",
+      "skills": [],
+      "install": {}
     }
   ]
 }
