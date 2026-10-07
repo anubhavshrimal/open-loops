@@ -199,7 +199,7 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 
 - `ol-<slug>`: one record for each Task that has or had a Worker and is not yet Done: `task_id`, `spec`, `workspace`, `runtime_ids` (only while the Worker is live), `started`, `status` (`working`, `in_review` or `blocked`), and the optional `review_state.last_comment_id`, `pending_prompt`, `gap_fill_done` and `blocked_notified`.
 - `chain_stalled_notified`: Gated Task id → id of its Blocked upstream Task.
-- `alerts`: one entry for each Slot whose tools fail, with `since` and `message`.
+- `alerts`: one entry for each Slot whose tools fail, with `since` and `message`. The key is the lowercase name of the Slot's notes file: `tracker`, `host`, `runtime`, `notifier` or `review`.
 
 ## 10. Notifications
 

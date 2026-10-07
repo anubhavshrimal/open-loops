@@ -263,7 +263,7 @@ For each Task:
 Top-level keys:
 - `ol-<slug>`: `{"task_id": "<tracker task id>", "spec": "<path>", "workspace": "<workspace path>", "runtime_ids": {<ids>}, "started": "<timestamp>", "status": "working | in_review | blocked", "review_state": {"last_comment_id": "<id-or-null>"}, "pending_prompt": "<first 60 chars of the Input Request prompt-or-null>", "gap_fill_done": true | "pending", "blocked_notified": true | false}`. Leave out any optional key that does not apply (never write `null` for `runtime_ids` or a value outside the schema), and write no other keys. One record per Task that has or had a Worker and is not yet Done. `runtime_ids` holds the ids that `runtime.md` names; use them to read, prompt and stop the Worker, and delete the key when the Worker is stopped. `review_state.last_comment_id` is updated in Step 5 to dedup comment-triggered Respawns; absent or null means "no prior comment seen". Failed-Check triggers are NOT deduped here: only the live-Worker guard limits them, so the Worker gets a fresh Respawn whenever no Worker is live. `pending_prompt` is set in Step 1 when you notify the Owner about an ambiguous permission prompt or an unanswerable question; clear it once the prompt is no longer in the Worker's output. `gap_fill_done` tracks the gap-fill re-prompt (Step 1): key absent = not applicable or not yet triggered, `"pending"` = re-prompt sent, waiting for the second completion signal, `true` = gap-fill round finished, go on to normal completion handling. `blocked_notified` dedups the Blocked message of Step 6.
 - `chain_stalled_notified`: `{"<task_id>": "<upstream_task_id>"}`: dedup map for chain-stall messages.
-- `alerts`: `{"<slot>": {"since": "<timestamp>", "message": "<text>"}}`: one entry per Slot whose tools are failing (see **Slot tool failure**).
+- `alerts`: `{"<slot>": {"since": "<timestamp>", "message": "<text>"}}`: one entry per Slot whose tools are failing (see **Slot tool failure**). `<slot>` is the lowercase name of the Slot's notes file, one of `tracker`, `host`, `runtime`, `notifier`, `review` (for example `alerts["tracker"]`, never `"Tracker"`).
 
 ## Important
 - Do NOT read Specs for work or do Task work yourself. Workers do that.
@@ -271,7 +271,7 @@ Top-level keys:
 - Do NOT spawn more Workers than the cap.
 - Run only shell commands that never wait for input. A command that asks a question (for example `mv` or `cp` when the shell aliases it to `mv -i` or `cp -i`) blocks the Cycle, and the session cannot end. Write files with your file tools. To copy or move a file in the shell, skip the alias: `command mv -f`, `command cp -f` (with a `cp -i` alias, `cp -f` still asks).
 - **Slot tool failure.** If the tools of any Slot (Tracker, Runtime, Review System, or a missing notes file) are not available or fail in this Cycle, apply this dedup and recovery pattern:
-  - Check if `state.json.alerts["<slot>"]` exists.
+  - Check if `state.json.alerts["<slot>"]` exists. `<slot>` is the lowercase notes-file name: `tracker`, `host`, `runtime`, `notifier` or `review`.
   - If NOT: add it (`since`, `message`) and send `system_alert`: `⚠️ <Slot> unavailable: cannot run the Cycle. <root cause if known>. Fix the <Slot> tools.` Then STOP (still log the Cycle). Make no other state changes.
   - If it exists: STOP silently (already notified). Still log the Cycle. Do NOT send again on later failed Cycles: one alert per outage.
   - On recovery (the Slot's tools work again) and the entry exists: remove it and send `system_recovered`: `✅ <Slot> restored, resuming Open Loops.`
