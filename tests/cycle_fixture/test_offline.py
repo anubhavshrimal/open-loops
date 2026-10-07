@@ -139,11 +139,9 @@ class SandboxTest(unittest.TestCase):
 class ExplorationSandboxTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
-        self.sb = run_fixture.build_sandbox(
-            Path(self.tmp.name), "sonnet", "sonnet", "auto", project_files=("check.sh", "fib.py", "measure.sh")
-        )
-        run_fixture.write_fixture_spec(self.sb, "shorten-fib")
-        run_fixture.write_task(self.sb, "shorten-fib", "Shorten fib.py", "Ready")
+        files = (run_fixture.CHECK_SH, REPO / "examples/files/fib.py", REPO / "examples/files/measure.sh")
+        self.sb = run_fixture.build_sandbox(Path(self.tmp.name), "sonnet", "sonnet", "auto", project_files=files)
+        run_fixture.write_example(self.sb, "shorten-fib")
 
     def tearDown(self):
         self.tmp.cleanup()

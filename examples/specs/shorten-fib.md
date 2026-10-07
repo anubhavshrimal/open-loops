@@ -2,7 +2,7 @@
 title: "Shorten fib.py"
 type: source-summary
 section: projects
-tags: [exploration, fixture]
+tags: [exploration, example]
 sources: []
 created: 2026-10-07
 updated: 2026-10-07
@@ -51,7 +51,7 @@ Only the code of `fib.py`. Its command line (`python3 fib.py <n>` prints the n-t
 
 ## Read-Only Files
 
-`measure.sh`, `check.sh`, `README.md`
+`measure.sh`, and every file other than `fib.py`
 
 ## Time Budget
 

@@ -1,0 +1,44 @@
+{
+  "_comment": "Third-party sources that setup installs from upstream. Never copied into this repo. install-third-party.sh, NOTICE and the credits table in SETUP.md all read this list. An optional source is credited only, never installed; `./install-third-party.sh --check` fails when they drift apart.",
+  "sources": [
+    {
+      "name": "mattpocock/skills",
+      "repo": "https://github.com/mattpocock/skills",
+      "author": "Matt Pocock",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2026 Matt Pocock",
+      "optional": false,
+      "used_for": "The default review skill `code-review` in the Worker's completion steps.",
+      "skills": ["code-review"],
+      "install": {
+        "claude": {"marketplace": "mattpocock/skills", "plugin": "mattpocock-skills@mattpocock"},
+        "npx": {"source": "mattpocock/skills"}
+      }
+    },
+    {
+      "name": "obra/superpowers",
+      "repo": "https://github.com/obra/superpowers",
+      "author": "Jesse Vincent",
+      "license": "MIT",
+      "copyright": "Copyright (c) 2025 Jesse Vincent",
+      "optional": false,
+      "used_for": "The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`.",
+      "skills": ["verification-before-completion", "systematic-debugging", "receiving-code-review", "subagent-driven-development"],
+      "install": {
+        "claude": {"marketplace": "obra/superpowers-marketplace", "plugin": "superpowers@superpowers-marketplace"},
+        "npx": {"source": "obra/superpowers"}
+      }
+    },
+    {
+      "name": "herdrdev/herdr",
+      "repo": "https://github.com/herdrdev/herdr",
+      "author": "The Herdr authors",
+      "license": "Apache-2.0",
+      "copyright": "",
+      "optional": true,
+      "used_for": "The recommended Runtime. The Owner installs the `herdr` program from its own docs.",
+      "skills": [],
+      "install": {}
+    }
+  ]
+}

@@ -6,7 +6,7 @@ Each scenario builds its own sandbox, a new temp directory with:
 
 - a project repo and its local bare `origin` (made with `git clone --bare`, so the fixture runs no `git push`),
 - a Markdown Tracker directory with the scenario's Tasks,
-- a Spec directory with their Specs: small Build Specs made from `fixtures/build.spec.md`, or a Spec kept as its own file (`fixtures/shorten-fib.spec.md`),
+- a Spec directory with their Specs: the samples from `examples/` (scenarios 1 and 2), or small Build Specs made from `fixtures/build.spec.md`,
 - a home directory with the five example notes files from `adapters/`, filled in for the sandbox: Markdown Tracker, cron + `claude -p` Host, tmux Runtime (on the default tmux server), log-file Notifier, Local branch Review System. As setup does, the fixture also copies `core/agents/*.md` to `<home>/.claude/agents/`.
 
 A scenario that starts in the middle of the Open Loop also makes what earlier Cycles would have left: the Task branch `ol-<slug>` in a worktree under `.openloops/worktrees/`, the Worker's PR comment on the Task (`Branch:`, `Commit:`, `Checks:`), and the `state.json` record. Between Cycles the fixture acts as the Owner where the scenario says so (it moves a Task to Done, merges a branch, adds a missing file).
@@ -15,8 +15,8 @@ Each Cycle runs the command in the "How a Cycle starts" block of the example `ho
 
 ## Scenarios
 
-1. **`build`: a Ready Task reaches In Review.** After Cycle 1: the Worker `ol-hello-file` exists, `state.json` has its record and validates against `core/state.schema.json`, the Task is Working, and the Notifier log has a `spawned` line. At the end: the Task is In Review with a Tracker comment that names the branch, the branch has a commit with `hello.txt` (the Local branch Review System never pushes), and the Worker is closed.
-2. **`exploration`: an Exploration Task reaches In Review.** The Spec is a tiny Exploration Spec with `agent: auto-researcher` and a 10-minute time budget: make `fib.py` shorter while `sh measure.sh` still passes (metric: its non-empty line count). After Cycle 1: the same checks as scenario 1 for `ol-shorten-fib`, plus the Worker was started with `--agent auto-researcher`. At the end: the Task is In Review with a Tracker comment that names the branch, the branch has a commit that is not in `main`, the state path `<project>/.openloops/shorten-fib/` has `results.tsv` (tab-separated header and at least one experiment row), `experiments-comparator.html` and the findings report `report.html` (the Spec's `report:` field is empty, so the default path), and the Worker is closed.
+1. **`build`: the sample Build Task reaches In Review.** The Task and its Spec are `examples/tasks/hello-file.md` and `examples/specs/hello-file.md`, the same sample that setup uses to verify a new install. After Cycle 1: the Worker `ol-hello-file` exists, `state.json` has its record and validates against `core/state.schema.json`, the Task is Working, and the Notifier log has a `spawned` line. At the end: the Task is In Review with a Tracker comment that names the branch, the branch has a commit with `hello.txt` (the Local branch Review System never pushes), and the Worker is closed.
+2. **`exploration`: the sample Exploration Task reaches In Review.** The Task and its Spec are `examples/tasks/shorten-fib.md` and `examples/specs/shorten-fib.md` (with `examples/files/fib.py` and `measure.sh` in the project): a tiny Exploration Spec with `agent: auto-researcher` and a 10-minute time budget: make `fib.py` shorter while `sh measure.sh` still passes (metric: its non-empty line count). After Cycle 1: the same checks as scenario 1 for `ol-shorten-fib`, plus the Worker was started with `--agent auto-researcher`. At the end: the Task is In Review with a Tracker comment that names the branch, the branch has a commit that is not in `main`, the state path `<project>/.openloops/shorten-fib/` has `results.tsv` (tab-separated header and at least one experiment row), `experiments-comparator.html` and the findings report `report.html` (the Spec's `report:` field is empty, so the default path), and the Worker is closed.
 3. **`gated`: a Gated Task stays Ready.** `gate-down` depends on `gate-up`, which is In Review. Cycle 1 sends nothing, spawns no Worker and leaves `gate-down` in Ready. The Owner merges `gate-up` and moves it to Done; Cycle 2 spawns `gate-down` (a record in `state.json`, the Task Working or already In Review, a `spawned` line).
 4. **`parent`: a parent Task with two child Tasks.** `family` has the children `fam-a` and `fam-b`; `fam-b` depends on `fam-a`, and its Spec has a `{TBD: ...}` gap that `fam-a`'s work fills. Only `fam-a` spawns. When the Orchestrator accepts its completion, `gap_fill_done` is `true`, the gap in `fam-b`'s Spec is filled, and the Spec was changed before the `in_review` line was sent. The Owner moves `fam-a` to Done; the next Cycle spawns `fam-b`. `family` never gets a Worker or a record and stays in Ready.
 5. **`follow-up`: a Follow-up causes a Respawn.** `followup-file` is In Review with an Owner comment `ACTION: ...`. Cycle 1 starts `ol-followup-file` in the existing Workspace (no new worktree or branch), sends `respawned`, and leaves the Task Working with a `working` record (or both back at In Review).
@@ -48,6 +48,17 @@ Options: `--scenario` (default: all), `--runtime` (`tmux` or `herdr`, default `t
 
 The fixture prints `SCENARIO <n> PASSED` or the failed checks for each scenario, then a summary that ends with `ALL <n> SCENARIOS PASSED` (exit 0) or `SOME SCENARIOS FAILED` (exit 1). It keeps every sandbox for inspection and prints its path.
 
+## Setup dry run
+
+```sh
+python3 tests/cycle_fixture/setup_dry_run.py               # setup, then scenario 1 on its notes files
+python3 tests/cycle_fixture/setup_dry_run.py --no-fixture  # setup and the notes-file checks only
+```
+
+It builds a sandbox whose Open Loops home directory is empty, at the default place `<temp HOME>/.openloops/`. Then a new `claude -p` session, with `HOME` set to the temp HOME, follows `SETUP.md`. The prompt gives the Owner's answers: every Slot on its local fallback, no optional modules, `OPENLOOPS_SKIP_THIRD_PARTY=1`, and stop before "Start the Host" (so it never changes the crontab). The script then checks that the five notes files exist with no placeholder left and with the sandbox's values, that the core agents are in the home directory, and that the crontab and the Open Loops repo did not change. Last, it runs scenario 1 (`build`) in the same sandbox, with the notes files that setup wrote. It prints `SETUP DRY RUN AND FIXTURE PASSED` (exit 0) or the failed checks, and keeps the sandbox, with the setup session's output in `setup-session.log`.
+
+Options: `--setup-model` (default `sonnet`), `--setup-timeout-minutes` (default 20), `--no-fixture`, and the agent and timing options of `run_fixture.py`.
+
 ## Offline checks
 
 These need no agent:
@@ -56,4 +67,4 @@ These need no agent:
 python3 -m unittest discover -s tests/cycle_fixture
 ```
 
-They check the state schema, the sandbox build and the scenario helpers, the Spec template fields, that `core/` names no Slot product, and that each Contract map row in `adapters/*/README.md` points at text in its example notes file.
+They check the state schema, the sandbox build and the scenario helpers, the Spec template fields, that `core/` names no Slot product, that each Contract map row in `adapters/*/README.md` points at text in its example notes file, the samples in `examples/`, the steps of `SETUP.md`, and the third-party installer (with stub `claude` and `npx` programs: one route per agent, a second run installs nothing, warn and go on, the opt-out variable) and that `NOTICE` and the credits table match `third-party.json`.

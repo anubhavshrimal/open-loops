@@ -5,8 +5,8 @@ Each scenario builds its own sandbox, sets up Task files (and, where a scenario 
 mid-loop, the branch, Workspace and state.json that earlier Cycles would have left), runs
 Cycles, acts as the Owner between Cycles where the scenario says so, and checks the results:
 
-1. build: a Ready Task reaches In Review on a branch, and its Worker is closed.
-2. exploration: a Ready Task with a tiny Exploration Spec is spawned under the Exploration
+1. build: the sample Build Task (examples/) reaches In Review on a branch, and its Worker is closed.
+2. exploration: the sample Exploration Task (examples/) is spawned under the Exploration
    Worker agent and reaches In Review with a results file and the experiments comparator.
 3. gated: a Gated Task stays Ready with no Worker until its upstream Task is Done, then spawns.
 4. parent: a parent Task with two child Tasks: only the children spawn, and the gap-fill
@@ -45,6 +45,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
+EXAMPLES = REPO / "examples"
+CHECK_SH = HERE / "fixtures" / "check.sh"
 sys.path.insert(0, str(HERE))
 
 from schema_check import schema_errors  # noqa: E402
@@ -110,16 +112,19 @@ def now():
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="tmux", project_files=("check.sh",)):
-    """A sandbox with the project repo, its origin, the notes files and the core agents, and no Tasks yet."""
+def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="tmux", project_files=(CHECK_SH,),
+                  home=None, notes=True):
+    """A sandbox with the project repo, its origin, the notes files and the core agents, and no Tasks yet.
+    notes=False leaves the home directory empty, for setup to fill (the setup dry run)."""
+    home = home or root / "home"
     sb = Sandbox(
         root=root,
         origin=root / "origin.git",
         project=root / "project",
         tracker=root / "tracker",
         specs=root / "specs",
-        home=root / "home",
-        notifier_log=root / "home" / "notifications.log",
+        home=home,
+        notifier_log=home / "notifications.log",
         values={},
     )
     for d in (sb.project, sb.tracker, sb.specs, sb.home):
@@ -130,8 +135,8 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runti
     git("config", "--local", "user.email", "fixture@example.invalid", cwd=sb.project)
     (sb.project / "README.md").write_text("# Fixture project\n\nA sandbox repo for the Open Loops Cycle fixture.\n")
     (sb.project / ".gitignore").write_text(".openloops/\n")
-    for name in project_files:
-        shutil.copy(HERE / "fixtures" / name, sb.project / name)
+    for path in project_files:
+        shutil.copy(path, sb.project / path.name)
     git("add", ".", cwd=sb.project)
     git("commit", "-q", "-m", "Initial commit", cwd=sb.project)
     git("clone", "-q", "--bare", str(sb.project), str(sb.origin))
@@ -152,6 +157,8 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runti
         "BUILD_TEST_COMMAND": "sh check.sh",
         "EXTRA_DIRS": f"--add-dir {sb.tracker} --add-dir {sb.home} --add-dir {sb.specs}",
     })
+    if not notes:
+        return sb
     for name, source in notes_files(runtime).items():
         (sb.home / name).write_text(render(source.read_text(), sb.values))
     # Setup step: install the core agents where the Worker's --add-dir of the home directory finds them.
@@ -177,10 +184,10 @@ def write_spec(sb, slug, title, what, acceptance, depends_on=(), spec_status="re
     return sb.spec_file(slug)
 
 
-def write_fixture_spec(sb, slug):
-    """A Spec kept as its own file, fixtures/<slug>.spec.md."""
-    sb.spec_file(slug).write_text(render((HERE / f"fixtures/{slug}.spec.md").read_text(), sb.values))
-    return sb.spec_file(slug)
+def write_example(sb, slug):
+    """The sample Spec and Markdown Task examples/specs/<slug>.md and examples/tasks/<slug>.md, filled in."""
+    sb.spec_file(slug).write_text(render((EXAMPLES / "specs" / f"{slug}.md").read_text(), sb.values))
+    sb.task_file(slug).write_text(render((EXAMPLES / "tasks" / f"{slug}.md").read_text(), sb.values))
 
 
 def write_task(sb, task_id, title, state, spec=True, parent="", depends_on=(), body="", comments=()):
@@ -455,14 +462,17 @@ def wait_for(predicate, seconds, poll=10, observe=None):
 class Scenario:
     """One scenario in its own sandbox: its Cycle command, its Worker names and its checks."""
 
-    def __init__(self, number, name, args, slugs, project_files=("check.sh",)):
+    def __init__(self, number, name, args, slugs, project_files=(CHECK_SH,), sb=None):
+        """sb: run in this sandbox (its notes files already written) instead of a new one."""
         self.number = number
         self.args = args
         self.runtime = args.runtime
         self.workers = [f"ol-{slug}" for slug in slugs]
-        root = Path(tempfile.mkdtemp(prefix=f"openloops-fixture-s{number}-"))
-        self.sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode,
-                                self.runtime, project_files)
+        if sb is None:
+            root = Path(tempfile.mkdtemp(prefix=f"openloops-fixture-s{number}-"))
+            sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode,
+                               self.runtime, project_files)
+        self.sb = sb
         self.command = cycle_command((self.sb.home / "host.md").read_text())
         self.checks = Checks(f"scenario {number}")
         self.check = self.checks.check
@@ -546,12 +556,10 @@ def reach_in_review(s, slug, agent=""):
     s.state_valid()
 
 
-def scenario_build(args):
+def scenario_build(args, sb=None):
     slug = "hello-file"
-    s = Scenario(1, "build: a Ready Task reaches In Review", args, [slug])
-    write_spec(s.sb, slug, "Add hello.txt", "Add a file `hello.txt` at the root of the repo with one line: `Hello from Open Loops.`",
-               "`hello.txt` exists on the Task branch with exactly one line, `Hello from Open Loops.`")
-    write_task(s.sb, slug, "Add hello.txt", "Ready")
+    s = Scenario(1, "build: the sample Build Task reaches In Review", args, [slug], sb=sb)
+    write_example(s.sb, slug)
     reach_in_review(s, slug)
     hello = git("show", f"ol-{slug}:hello.txt", cwd=s.sb.project, check=False).stdout
     s.check("hello.txt on the branch has the one line", hello == "Hello from Open Loops.\n", repr(hello))
@@ -560,10 +568,9 @@ def scenario_build(args):
 
 def scenario_exploration(args):
     slug = "shorten-fib"
-    s = Scenario(2, "exploration: an Exploration Task reaches In Review", args, [slug],
-                 project_files=("check.sh", "fib.py", "measure.sh"))
-    write_fixture_spec(s.sb, slug)
-    write_task(s.sb, slug, "Shorten fib.py", "Ready")
+    s = Scenario(2, "exploration: the sample Exploration Task reaches In Review", args, [slug],
+                 project_files=(CHECK_SH, EXAMPLES / "files/fib.py", EXAMPLES / "files/measure.sh"))
+    write_example(s.sb, slug)
     reach_in_review(s, slug, agent="auto-researcher")
     rows = results_rows(s.sb, slug)
     s.check("the state path has results.tsv with a header and at least one experiment row", rows,
@@ -810,18 +817,33 @@ SCENARIOS = {
 }
 
 
-def main():
-    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--scenario", action="append", choices=list(SCENARIOS),
-                        help="run only this scenario (repeat for more); default: all")
-    parser.add_argument("--runtime", choices=RUNTIMES, default="tmux", help="example runtime.md to use")
-    parser.add_argument("--setup-only", action="store_true", help="build one sandbox, print its paths, run no Cycle")
+def add_agent_options(parser):
+    """The options for the agents and the timing of the Cycles, shared with setup_dry_run.py."""
     parser.add_argument("--orchestrator-model", default="sonnet")
     parser.add_argument("--worker-model", default="sonnet")
     parser.add_argument("--permission-mode", default="auto", help="Claude Code permission mode for both agents")
     parser.add_argument("--timeout-minutes", type=float, default=45, help="time for the Worker phase of one scenario")
     parser.add_argument("--interval-seconds", type=float, default=120, help="longest wait for a Worker between Cycles")
     parser.add_argument("--cycle-timeout-minutes", type=float, default=26, help="kill one Cycle after this time")
+
+
+def start_tmux_helper():
+    """Workers start from the tmux server's environment, so the server must run outside any agent
+    sandbox. If no server runs, start one from here with a helper session; return its name or None."""
+    if tmux_sessions():
+        return None
+    helper = "openloops-fixture-server"
+    subprocess.run(["tmux", "new-session", "-d", "-s", helper], check=True)
+    return helper
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--scenario", action="append", choices=list(SCENARIOS),
+                        help="run only this scenario (repeat for more); default: all")
+    parser.add_argument("--runtime", choices=RUNTIMES, default="tmux", help="example runtime.md to use")
+    parser.add_argument("--setup-only", action="store_true", help="build one sandbox, print its paths, run no Cycle")
+    add_agent_options(parser)
     args = parser.parse_args()
 
     for tool in ("git", args.runtime, "timeout") + (() if args.setup_only else ("claude",)):
@@ -843,14 +865,9 @@ def main():
     leftover = [n for n in names if n in workers(args.runtime)]
     if leftover:
         sys.exit(f"[fixture] Workers {leftover} already exist; stop them first: {stop_hint(args.runtime)}")
-    # Workers start from the Runtime server's environment, so the server must run outside any agent
-    # sandbox. For tmux, start it from here if it is not running, and stop only that helper session
-    # at the end. For Herdr, the fixture's own session (started above) is stopped at the end if all
-    # scenarios pass.
-    helper = None
-    if args.runtime == "tmux" and not tmux_sessions():
-        helper = "openloops-fixture-server"
-        subprocess.run(["tmux", "new-session", "-d", "-s", helper], check=True)
+    # For tmux, stop only the helper session at the end. For Herdr, the fixture's own session
+    # (started above) is stopped at the end if all scenarios pass.
+    helper = start_tmux_helper() if args.runtime == "tmux" else None
     print(f"[fixture] Runtime: {args.runtime}; watch a Worker: {attach_hint(args.runtime)}")
 
     results = {}

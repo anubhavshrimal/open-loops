@@ -1,0 +1,21 @@
+Open Loops
+Copyright (c) 2026 Anubhav Shrimal
+Licensed under the MIT License (see LICENSE).
+
+This repository contains no third-party skill or program files. Setup installs the
+third-party software below from its upstream source, on the Owner's machine, under
+its own license. Each is a separate project.
+
+mattpocock/skills (https://github.com/mattpocock/skills)
+Copyright (c) 2026 Matt Pocock
+License: MIT
+Use: The default review skill `code-review` in the Worker's completion steps.
+
+obra/superpowers (https://github.com/obra/superpowers)
+Copyright (c) 2025 Jesse Vincent
+License: MIT
+Use: The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`.
+
+herdrdev/herdr (https://github.com/herdrdev/herdr)
+License: Apache-2.0
+Use: The recommended Runtime. The Owner installs the `herdr` program from its own docs.
