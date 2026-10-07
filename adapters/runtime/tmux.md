@@ -29,7 +29,7 @@ tmux new-session -d -s ol-<slug> -x 220 -y 50 -c <workspace-path> \
 ```
 
 - Build Spec prefix: start the first prompt with `/goal ` (Claude Code's goal command keeps the agent working until the goal is met). If your agent has no such command, leave the prefix out.
-- Exploration Spec with `agent: <name>`: add `--agent <name>` after `--model {{WORKER_MODEL}}`.
+- Exploration Spec with `agent: <name>`: add `--agent <name>` after `--model {{WORKER_MODEL}}`. Example for `agent: auto-researcher`: `claude --model {{WORKER_MODEL}} --agent auto-researcher --permission-mode ...`. Claude Code finds the agent file at `{{HOME_DIR}}/.claude/agents/<name>.md` (setup copies `core/agents/<name>.md` there), because `{{EXTRA_DIRS}}` adds the Open Loops home directory with `--add-dir`. That file wins over an agent with the same name in the user-level `~/.claude/agents/`.
 - Effort: add `--effort <level>` after the model to set it.
 - Extra directories: `{{EXTRA_DIRS}}` gives the Worker access outside its Workspace to the Tracker files, the home directory and the Spec files, one `--add-dir <path>` for each (for example `--add-dir ~/.openloops --add-dir ~/tasks`).
 

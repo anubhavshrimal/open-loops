@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
 """Cycle fixture: run real Open Loops Cycles against a sandbox with the local fallbacks.
 
-Scenario 1: a Ready Task with a trivial Build Spec is spawned as the tmux Worker
-`ol-hello-file`, gets a state.json record and a `spawned` Notifier line, reaches
+Scenario 1 (`build`): a Ready Task with a trivial Build Spec is spawned as the tmux
+Worker `ol-hello-file`, gets a state.json record and a `spawned` Notifier line, reaches
 In Review with a commit on its branch and a Tracker comment that names the branch,
 and its Worker is closed.
+
+Scenario 2 (`exploration`): a Ready Task with a tiny Exploration Spec (10-minute time
+budget) is spawned as `ol-shorten-fib` under the Exploration Worker agent, and reaches
+In Review with a results file and the experiments comparator in its state path.
 
 The sandbox is a temp directory with a project repo and its local bare origin, a
 Markdown Tracker directory, a Spec directory, and a home directory with the five
@@ -25,6 +29,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
@@ -32,8 +37,6 @@ sys.path.insert(0, str(HERE))
 
 from schema_check import schema_errors  # noqa: E402
 
-SLUG = "hello-file"
-WORKER = f"ol-{SLUG}"
 HELLO_LINE = "Hello from Open Loops."
 
 NOTES_FILES = {
@@ -46,7 +49,21 @@ NOTES_FILES = {
 
 
 @dataclass
+class Scenario:
+    number: int
+    slug: str
+    project_files: tuple  # fixture files copied into the project repo before the first commit
+    result_checks: Callable  # (sandbox, checks): the scenario's own end checks
+    agent: str = ""  # the Spec's agent: field; the Worker must start with --agent <agent>
+
+    @property
+    def worker(self):
+        return f"ol-{self.slug}"
+
+
+@dataclass
 class Sandbox:
+    scenario: Scenario
     root: Path
     origin: Path
     project: Path
@@ -57,7 +74,11 @@ class Sandbox:
 
     @property
     def task_file(self):
-        return self.tracker / f"{SLUG}.md"
+        return self.tracker / f"{self.scenario.slug}.md"
+
+    @property
+    def state_path(self):
+        return self.project / ".openloops" / self.scenario.slug
 
     @property
     def state_file(self):
@@ -77,8 +98,10 @@ def git(*args, cwd=None, check=True):
     return subprocess.run(["git", *args], cwd=cwd, check=check, capture_output=True, text=True)
 
 
-def build_sandbox(root, orchestrator_model, worker_model, permission_mode):
+def build_sandbox(root, orchestrator_model, worker_model, permission_mode, scenario=None):
+    scenario = scenario or SCENARIOS["build"]
     sb = Sandbox(
+        scenario=scenario,
         root=root,
         origin=root / "origin.git",
         project=root / "project",
@@ -95,7 +118,8 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode):
     git("config", "--local", "user.email", "fixture@example.invalid", cwd=sb.project)
     (sb.project / "README.md").write_text("# Fixture project\n\nA sandbox repo for the Open Loops Cycle fixture.\n")
     (sb.project / ".gitignore").write_text(".openloops/\n")
-    shutil.copy(HERE / "fixtures/check.sh", sb.project / "check.sh")
+    for name in scenario.project_files:
+        shutil.copy(HERE / "fixtures" / name, sb.project / name)
     git("add", ".", cwd=sb.project)
     git("commit", "-q", "-m", "Initial commit", cwd=sb.project)
     git("clone", "-q", "--bare", str(sb.project), str(sb.origin))
@@ -118,8 +142,14 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode):
     }
     for name, source in NOTES_FILES.items():
         (sb.home / name).write_text(render(source.read_text(), values))
-    sb.task_file.write_text(render((HERE / "fixtures/hello-file.task.md").read_text(), values))
-    (sb.specs / f"{SLUG}.md").write_text(render((HERE / "fixtures/hello-file.spec.md").read_text(), values))
+    # Setup step: install the core agents where the Worker's --add-dir of the home directory finds them.
+    agents = sb.home / ".claude" / "agents"
+    agents.mkdir(parents=True)
+    for agent in sorted((REPO / "core/agents").glob("*.md")):
+        shutil.copy(agent, agents / agent.name)
+    slug = scenario.slug
+    sb.task_file.write_text(render((HERE / f"fixtures/{slug}.task.md").read_text(), values))
+    (sb.specs / f"{slug}.md").write_text(render((HERE / f"fixtures/{slug}.spec.md").read_text(), values))
     return sb
 
 
@@ -152,11 +182,18 @@ def task_comments(sb):
     return [c.strip() for c in re.split(r"^### ", body, flags=re.M)[1:]]
 
 
-def tmux_sessions(sb=None):
+def tmux_sessions():
     out = subprocess.run(
         ["tmux", "list-sessions", "-F", "#{session_name}"], capture_output=True, text=True
     )
     return out.stdout.split() if out.returncode == 0 else []
+
+
+def pane_command(session):
+    out = subprocess.run(
+        ["tmux", "list-panes", "-t", session, "-F", "#{pane_start_command}"], capture_output=True, text=True
+    )
+    return out.stdout.strip() if out.returncode == 0 else ""
 
 
 def read_state(sb):
@@ -197,9 +234,17 @@ class Checks:
 
 
 def spawn_checks(sb, checks):
+    worker = sb.scenario.worker
     state = read_state(sb) or {}
-    checks.check(f"tmux Worker {WORKER} exists after Cycle 1", WORKER in tmux_sessions(sb), str(tmux_sessions(sb)))
-    checks.check(f"state.json has a record for {WORKER}", WORKER in state, str(list(state)))
+    checks.check(f"tmux Worker {worker} exists after Cycle 1", worker in tmux_sessions(), str(tmux_sessions()))
+    checks.check(f"state.json has a record for {worker}", worker in state, str(list(state)))
+    if sb.scenario.agent:
+        command = pane_command(worker)
+        checks.check(
+            f"Worker {worker} started with --agent {sb.scenario.agent}",
+            f"--agent {sb.scenario.agent}" in command,
+            command[:200],
+        )
     errors = state_errors(sb)
     checks.check("state.json validates against core/state.schema.json", not errors, "; ".join(errors))
     checks.check(
@@ -213,17 +258,53 @@ def spawn_checks(sb, checks):
     )
 
 
+def results_rows(sb):
+    """Data rows of results.tsv in the state path, or None if the file has no tab-separated header."""
+    path = sb.state_path / "results.tsv"
+    if not path.exists():
+        return None
+    lines = [line for line in path.read_text().splitlines() if line.strip()]
+    if not lines or "\t" not in lines[0] or "experiment_id" not in lines[0]:
+        return None
+    return lines[1:]
+
+
+def hello_file_checks(sb, checks):
+    hello = git("show", f"{sb.scenario.worker}:hello.txt", cwd=sb.project, check=False).stdout
+    checks.check("hello.txt on the branch has the one line", hello == HELLO_LINE + "\n", repr(hello))
+
+
+def exploration_checks(sb, checks):
+    rows = results_rows(sb)
+    checks.check(
+        "the state path has results.tsv with a header and at least one experiment row",
+        rows,
+        "missing or no header" if rows is None else "no rows",
+    )
+    for name in ("experiments-comparator.html", "report.html"):
+        path = sb.state_path / name
+        checks.check(f"the state path has {name}", path.exists() and "<" in path.read_text(), str(path))
+
+
+SCENARIOS = {
+    "build": Scenario(1, "hello-file", ("check.sh",), hello_file_checks),
+    "exploration": Scenario(
+        2, "shorten-fib", ("check.sh", "fib.py", "measure.sh"), exploration_checks, agent="auto-researcher"
+    ),
+}
+
+
 def final_checks(sb, checks):
+    worker = sb.scenario.worker
     checks.check("Task is In Review", task_state(sb) == "In Review", task_state(sb))
     comments = task_comments(sb)
     checks.check(
-        f"a Tracker comment names the branch {WORKER}", any(WORKER in c for c in comments), f"{len(comments)} comments"
+        f"a Tracker comment names the branch {worker}", any(worker in c for c in comments), f"{len(comments)} comments"
     )
-    branch_log = git("log", "--oneline", f"main..{WORKER}", cwd=sb.project, check=False).stdout.strip()
-    checks.check(f"branch {WORKER} has a commit that is not in main", branch_log, "no commits")
-    hello = git("show", f"{WORKER}:hello.txt", cwd=sb.project, check=False).stdout
-    checks.check("hello.txt on the branch has the one line", hello == HELLO_LINE + "\n", repr(hello))
-    checks.check(f"Worker {WORKER} is closed", WORKER not in tmux_sessions(sb), str(tmux_sessions(sb)))
+    branch_log = git("log", "--oneline", f"main..{worker}", cwd=sb.project, check=False).stdout.strip()
+    checks.check(f"branch {worker} has a commit that is not in main", branch_log, "no commits")
+    sb.scenario.result_checks(sb, checks)
+    checks.check(f"Worker {worker} is closed", worker not in tmux_sessions(), str(tmux_sessions()))
     errors = state_errors(sb)
     checks.check("state.json still validates", not errors, "; ".join(errors))
     log = (sb.home / "orchestrator.log").read_text() if (sb.home / "orchestrator.log").exists() else ""
@@ -241,6 +322,7 @@ def wait_for(predicate, seconds, poll=10):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--scenario", choices=sorted(SCENARIOS), default="build", help="which scenario to run")
     parser.add_argument("--setup-only", action="store_true", help="build the sandbox, print its paths, run no Cycle")
     parser.add_argument("--orchestrator-model", default="sonnet")
     parser.add_argument("--worker-model", default="sonnet")
@@ -259,15 +341,17 @@ def main():
             sys.exit(f"[fixture] missing tool: {tool}")
 
     root = Path(tempfile.mkdtemp(prefix="openloops-fixture-"))
-    sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode)
+    scenario = SCENARIOS[args.scenario]
+    worker = scenario.worker
+    sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode, scenario)
     command = cycle_command((sb.home / "host.md").read_text())
     print(f"[fixture] sandbox: {sb.root}")
-    print(f"[fixture] attach to the Worker: tmux attach -t {WORKER}")
+    print(f"[fixture] attach to the Worker: tmux attach -t {worker}")
     print(f"[fixture] Cycle command: {command}")
     if args.setup_only:
         return 0
-    if WORKER in tmux_sessions():
-        sys.exit(f"[fixture] a tmux session {WORKER} already exists; stop it first: tmux kill-session -t {WORKER}")
+    if worker in tmux_sessions():
+        sys.exit(f"[fixture] a tmux session {worker} already exists; stop it first: tmux kill-session -t {worker}")
     # Workers start from the tmux server's environment, so the server must run outside any agent
     # sandbox. Start it from here if it is not running, and stop only that helper session at the end.
     helper = None
@@ -290,16 +374,16 @@ def main():
             break
         cycle += 1
         run_cycle(sb, cycle, command, cycle_timeout)
-        if task_state(sb) == "In Review" and WORKER not in tmux_sessions(sb):
+        if task_state(sb) == "In Review" and worker not in tmux_sessions():
             break
 
     final_checks(sb, checks)
     print(f"[fixture] Cycles run: {cycle}")
-    print(f"[fixture] {'SCENARIO 1 PASSED' if checks.passed else 'SCENARIO 1 FAILED'}")
+    print(f"[fixture] SCENARIO {scenario.number} ({args.scenario}) {'PASSED' if checks.passed else 'FAILED'}")
     if helper:
         subprocess.run(["tmux", "kill-session", "-t", helper], capture_output=True)
     if not checks.passed:
-        print(f"[fixture] inspect: {sb.root}; stop a leftover Worker: tmux kill-session -t {WORKER}")
+        print(f"[fixture] inspect: {sb.root}; stop a leftover Worker: tmux kill-session -t {worker}")
     return 0 if checks.passed else 1
 
 

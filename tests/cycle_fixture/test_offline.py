@@ -100,6 +100,58 @@ class SandboxTest(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout)
 
 
+class ExplorationSandboxTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
+        self.sb = run_fixture.build_sandbox(
+            Path(self.tmp.name), "sonnet", "sonnet", "auto", run_fixture.SCENARIOS["exploration"]
+        )
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def test_home_has_the_exploration_worker_agent(self):
+        installed = self.sb.home / ".claude/agents/auto-researcher.md"
+        self.assertEqual(installed.read_text(), (REPO / "core/agents/auto-researcher.md").read_text())
+        self.assertIn("--agent auto-researcher", (self.sb.home / "runtime.md").read_text())
+        self.assertIn(f"--add-dir {self.sb.home}", (self.sb.home / "runtime.md").read_text())
+
+    def test_task_starts_ready_and_names_an_exploration_spec(self):
+        self.assertEqual(run_fixture.task_state(self.sb), "Ready")
+        spec = (self.sb.specs / "shorten-fib.md").read_text()
+        self.assertIn(f"Spec: {self.sb.specs}/shorten-fib.md", self.sb.task_file.read_text())
+        self.assertIn("## Hypothesis", spec)
+        self.assertIn('agent: "auto-researcher"', spec)
+        self.assertIn("10 minutes", spec)
+
+    def test_run_command_gives_the_baseline_metric(self):
+        result = subprocess.run(["sh", "measure.sh"], cwd=self.sb.project, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRegex(result.stdout, r"^lines: [0-9]+$")
+
+    def test_results_rows_needs_a_tab_separated_header(self):
+        self.sb.state_path.mkdir(parents=True)
+        self.assertIsNone(run_fixture.results_rows(self.sb))
+        (self.sb.state_path / "results.tsv").write_text("experiment_id\tmetric_value\n001\t21\n")
+        self.assertEqual(run_fixture.results_rows(self.sb), ["001\t21"])
+
+
+class SpecTemplatesTest(unittest.TestCase):
+    def frontmatter_keys(self, name):
+        head = (REPO / "core/templates" / name).read_text().split("---", 2)[1]
+        return {line.split(":", 1)[0] for line in head.strip().splitlines()}
+
+    def test_both_templates_have_the_generic_fields(self):
+        for name in ("build-spec.md", "exploration-spec.md"):
+            keys = self.frontmatter_keys(name)
+            for field in ("tracker_id", "report", "workspace", "branch", "depends_on", "spec_status"):
+                self.assertIn(field, keys, f"{name}: {field}")
+
+    def test_exploration_template_names_its_agent(self):
+        self.assertIn("agent", self.frontmatter_keys("exploration-spec.md"))
+        self.assertTrue((REPO / "core/agents/auto-researcher.md").exists())
+
+
 class CoreIsAgentNeutralTest(unittest.TestCase):
     SLOT_PRODUCTS = re.compile(r"asana|github|herdr|tmux|slack|gitlab|linear|claude|codex|kirocrew|openclaw", re.I)
 
