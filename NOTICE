@@ -9,7 +9,7 @@ its own license. Each is a separate project.
 mattpocock/skills (https://github.com/mattpocock/skills)
 Copyright (c) 2026 Matt Pocock
 License: MIT
-Use: The default review skill `code-review` in the Worker's completion steps.
+Use: The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`.
 
 obra/superpowers (https://github.com/obra/superpowers)
 Copyright (c) 2025 Jesse Vincent

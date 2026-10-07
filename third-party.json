@@ -8,7 +8,7 @@
       "license": "MIT",
       "copyright": "Copyright (c) 2026 Matt Pocock",
       "optional": false,
-      "used_for": "The default review skill `code-review` in the Worker's completion steps.",
+      "used_for": "The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`.",
       "skills": ["code-review"],
       "install": {
         "claude": {"marketplace": "mattpocock/skills", "plugin": "mattpocock-skills@mattpocock"},

@@ -84,11 +84,35 @@ For more than one project, repeat questions 1 and 2. Each project is one row in 
 
 ## 5. Optional modules
 
-Ask one yes/no question for each optional module, default "no". A "no" installs nothing. A "yes" follows that module's setup steps, written under its question.
+Ask one yes/no question for each optional module, default "no". A "no" installs nothing. A "yes" follows that module's setup steps, written under its question. Do those steps after step 7: they use the skills that step 7 installs.
+
+In these steps, `<skills dir>` is the agent's own skills directory: `~/.claude/skills` for Claude Code, and `~/.agents/skills` (the shared copy) for Codex and other agents. If the Owner uses both, do each step for both. `<npx agents>` is the agent ids of step 7 (`OPENLOOPS_NPX_AGENTS`, default `codex`). If `OPENLOOPS_SKIP_THIRD_PARTY=1`, skip the `npx skills add` installs here too, and tell the Owner which skill to install another way.
 
 <!-- Each optional module adds its own subsection here: "### <module>", the yes/no question with its default, and the steps for a "yes". -->
 
-No optional module is in this version yet. Skip this step.
+### capture
+
+**Question:** "Do you want the capture module? Your agent keeps each idea in its own raw idea file, appends the grill transcript to it, and turns it into a self-contained Spec. (yes/no, default no)"
+
+On "yes":
+
+1. Ask where the raw idea files go: `{{IDEAS_DIR}}`, default `<home>/ideas`. Then ask where the finished Specs go: `{{SPECS_DIR}}`, default `<home>/specs`. Make both directories.
+2. The Workers must read the Specs. If `{{SPECS_DIR}}` is not under a directory of `{{EXTRA_DIRS}}` in `runtime.md`, add an `--add-dir` for it.
+3. Copy [`modules/capture/capture.md`](modules/capture/capture.md) to `<home>/capture.md` and replace its two placeholders.
+4. With the Owner's yes, link it from the agent's own instructions file, only if no link to it is there yet:
+   - **Claude Code:** add the line `@<home>/capture.md` to `~/.claude/CLAUDE.md`.
+   - **Codex:** add the text of `<home>/capture.md` to `~/.codex/AGENTS.md`, between the lines `<!-- open-loops capture:start -->` and `<!-- open-loops capture:end -->` (a re-run replaces the text between them).
+5. Install the `wayfinder` skill from [mattpocock/skills](https://github.com/mattpocock/skills), which the rules name. Claude Code: the `mattpocock-skills` plugin of step 7 holds it. Other agents: `npx skills add mattpocock/skills --skill wayfinder -g -y --agent <npx agents>`. If the install fails, tell the Owner and go on.
+
+### refine
+
+**Question:** "Do you want the refine module? It adds two skills, `spec-task` and `spec-exploration`, that interview you until an idea is a Build Spec or an Exploration Spec that a Worker can run without you. (yes/no, default no)"
+
+On "yes":
+
+1. Copy the folders [`modules/refine/skills/spec-task`](modules/refine/skills/spec-task) and [`modules/refine/skills/spec-exploration`](modules/refine/skills/spec-exploration) into `<skills dir>`. If a folder with the same name is already there and differs, ask the Owner before you replace it.
+2. In the two copied `SKILL.md` files, replace `{{CORE_DIR}}` with `<core>`. Check: `grep -rn '{{' <skills dir>/spec-task <skills dir>/spec-exploration` prints nothing.
+3. Install the `domain-modeling` skill from [mattpocock/skills](https://github.com/mattpocock/skills): the two skills use its glossary and ADR formats. Claude Code: the `mattpocock-skills` plugin of step 7 holds it. Other agents: `npx skills add mattpocock/skills --skill domain-modeling -g -y --agent <npx agents>`. If the install fails, tell the Owner and go on.
 
 ## 6. Write the notes files
 
@@ -127,7 +151,7 @@ What it installs, and the credits (made from [`third-party.json`](third-party.js
 <!-- credits:start -->
 | Source | Author | License | How Open Loops uses it |
 |---|---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Installed by setup from upstream. |
+| [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
 | [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
 | [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `herdr` program from its own docs. Not installed by setup. |
 <!-- credits:end -->
@@ -163,7 +187,7 @@ When the notes files exist:
 
 1. Read them all, and show the Owner the current tool and values for each Slot and project.
 2. Ask what to change. Change only that: edit only the lines of that notes file (or the Slot's whole file, if the Owner picks another tool for it). Keep every other file and line as it is. Never touch `state.json` or the Workspaces.
-3. Do only the steps that the change needs: for example step 7 if a new agent needs the skills, step 8 if the interval or the Host changed (replace the old crontab line or scheduled job; never leave two).
+3. Do only the steps that the change needs: for example step 7 if a new agent needs the skills, the module's steps of step 5 if the Owner turns a module on, step 8 if the interval or the Host changed (replace the old crontab line or scheduled job; never leave two).
 
 ## Stop and remove
 

@@ -211,5 +211,32 @@ class SetupDocTest(unittest.TestCase):
                 self.assertTrue((REPO / link).exists(), link)
 
 
+class ModulesTest(unittest.TestCase):
+    """Each optional module has its yes/no question in SETUP.md; the refine skills credit mattpocock/skills."""
+
+    def test_each_module_has_a_yes_no_question_in_setup(self):
+        modules = (REPO / "SETUP.md").read_text().split("## 5. Optional modules", 1)[1].split("## 6.", 1)[0]
+        names = sorted(d.name for d in (REPO / "modules").iterdir() if d.is_dir())
+        self.assertIn("capture", names)
+        self.assertIn("refine", names)
+        for module in names:
+            self.assertTrue((REPO / "modules" / module / "README.md").exists(), module)
+            section = modules.split(f"### {module}\n", 1)
+            self.assertEqual(len(section), 2, f"no ### {module} subsection")
+            self.assertIn("(yes/no, default no)", section[1].split("\n### ", 1)[0], module)
+
+    def test_refine_skills_have_the_mit_attribution_header(self):
+        for skill in ("spec-task", "spec-exploration"):
+            text = (REPO / "modules/refine/skills" / skill / "SKILL.md").read_text()
+            self.assertTrue(text.startswith(f"---\nname: {skill}\n"), skill)
+            header = text.split("<!--", 1)[1].split("-->", 1)[0]
+            for words in ("mattpocock/skills", "Copyright (c) 2026 Matt Pocock", "MIT License", "Permission is hereby granted"):
+                self.assertIn(words, header, skill)
+
+    def test_the_domain_modeling_format_files_are_not_copied(self):
+        for name in ("ADR-FORMAT.md", "GLOSSARY-FORMAT.md"):
+            self.assertEqual(list(REPO.glob(f"modules/**/{name}")), [], name)
+
+
 if __name__ == "__main__":
     unittest.main()
