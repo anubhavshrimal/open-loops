@@ -218,7 +218,7 @@ Scan the comments for any comment whose text starts with the Follow-up prefix (c
   - Respawn a continuation Worker (see Step 3, "Follow-up continuation" prompt).
   - Craft the first prompt as Step 3 says: read the Task body, ALL prior comments and the Follow-up text, and give the Worker the full context of what was done before and what must happen now. Do NOT just copy the Follow-up: the Worker needs the history.
   - Move the Task to Working, send `respawned` (trigger: follow-up): "🔄 Follow-up: **<task name>** (`ol-<slug>`). Action: <brief summary of the request>"
-- If the Follow-up is **fulfilled** (a Worker completed it): move the Task to Done, send `done`: "✅ Follow-up completed: **<task name>** (`ol-<slug>`)"
+- If the Follow-up is **fulfilled** (a Worker completed it): take no action for this signal and send nothing. The Worker's completion already moved the Task to In Review (Step 1). A fulfilled Follow-up never moves a Task to Done: only the PR state (Signal 2) or the Owner does.
 
 #### Signal 2: PR monitoring (coexists with Follow-ups)
 Read the Task body and comments for a PR reference (the form is in `review.md`).

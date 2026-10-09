@@ -670,7 +670,7 @@ def scenario_parent(args):
 
 def scenario_follow_up(args):
     slug = "followup-file"
-    s = Scenario(5, "follow-up: a Follow-up comment causes a Respawn in the same Workspace", args, [slug])
+    s = Scenario(5, "follow-up: a Follow-up causes a Respawn, and its fulfilment keeps the Task In Review", args, [slug])
     sb, check, worker = s.sb, s.check, f"ol-{slug}"
     write_spec(sb, slug, "Add followup.txt", "Add a file `followup.txt` with one line: `First line.`",
                "`followup.txt` has one line, `First line.`")
@@ -693,6 +693,14 @@ def scenario_follow_up(args):
     check("the Task is Working with a working record (or back In Review)",
           (task_state(sb, slug), record.get("status")) in (("Working", "working"), ("In Review", "working"), ("In Review", "in_review")),
           (task_state(sb, slug), record.get("status")))
+    s.state_valid()
+
+    # The Worker finishes the Follow-up. A fulfilled Follow-up never gives Done while the branch is not merged.
+    s.cycles_until(lambda: task_state(sb, slug) == "In Review" and worker not in s.live())
+    check("the Task is back In Review after the Follow-up", task_state(sb, slug) == "In Review", task_state(sb, slug))
+    s.quiet_cycle("fulfilled Follow-up, branch not merged")
+    check("the Task stays In Review (a fulfilled Follow-up is not Done)", task_state(sb, slug) == "In Review", task_state(sb, slug))
+    check("Notifier log has no done line", "done" not in events(sb), events(sb))
     s.state_valid()
     return s.finish()
 

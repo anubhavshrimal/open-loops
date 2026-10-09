@@ -73,7 +73,7 @@ The Orchestrator answers a prompt only when it is safe and the Spec makes the an
 
 - GitHub PR: the PR must be approved, merged or closed. A draft PR with no review stays In Review.
 - Local branch: the Worker's last commit must be in `main` (`git merge-base --is-ancestor <sha> main`), or move the Task to Done yourself.
-- A pending Follow-up keeps the Task open until a Worker fulfils it.
+- A pending Follow-up keeps the Task open until a Worker fulfils it. A fulfilled Follow-up does not move the Task to Done: the PR state or you do.
 
 ## Too many messages, or none
 

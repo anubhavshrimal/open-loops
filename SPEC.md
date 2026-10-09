@@ -38,7 +38,7 @@ A Task is in one of six states. `tracker.md` maps each one to the Tracker's nati
 | Working | The Task has a live Worker. | The Orchestrator, at Spawn or Respawn. |
 | Blocked | The Worker stopped on a problem that only the Owner can clear. | The Worker. The Orchestrator verifies and corrects. |
 | In Review | The result waits for the Owner or a reviewer. | The Worker. The Orchestrator verifies and corrects. |
-| Done | Nothing more is needed from anyone. | The Orchestrator (approved, merged or closed PR; fulfilled Follow-up). The Worker, only when its work left nothing to review (rare). The Owner, at any time. |
+| Done | Nothing more is needed from anyone. | The Orchestrator (approved, merged or closed PR). The Worker, only when its work left nothing to review (rare). The Owner, at any time. |
 
 Two conditions are not states:
 
@@ -53,7 +53,7 @@ stateDiagram-v2
     Working --> Blocked: Worker gives up, or exits with no result
     Working --> Done: nothing to review (rare)
     InReview --> Working: Respawn (Review comment, failed Check, Follow-up)
-    InReview --> Done: approved, merged, closed, or Follow-up fulfilled
+    InReview --> Done: approved, merged or closed PR
     Blocked --> Ready: blocker cleared
     InReview: In Review
 ```
@@ -68,7 +68,7 @@ A Cycle is one pass of the Orchestrator over the Tracker. The Host starts each C
 2. **Read Ready Tasks.** Find the Ready Tasks. Only leaf Tasks spawn. Look for a pending Follow-up, find the Spec, and apply the dependency gate.
 3. **Spawn Workers.** Most dependents first, up to the cap. Make or reuse the Workspace, make the state path, start the Worker with its first prompt, move the Task to Working, record it, notify.
 4. **Cap check.** At the cap, spawn nothing more and log which Tasks wait.
-5. **Monitor In Review.** For each Task: a pending Follow-up, a new Review comment or a failed Check gives a Respawn. An approved, merged or closed PR, or a fulfilled Follow-up, gives Done.
+5. **Monitor In Review.** For each Task: a pending Follow-up, a new Review comment or a failed Check gives a Respawn. An approved, merged or closed PR gives Done. A fulfilled Follow-up gives no action: the Task stays In Review until the PR state or the Owner moves it.
 6. **Monitor Blocked.** If the blocker has cleared, move the Task back to Ready. Otherwise notify the Owner once.
 7. **Log the Cycle** in `orchestrator.log`.
 
