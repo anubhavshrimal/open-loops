@@ -15,7 +15,7 @@ The Host starts the Orchestrator on a schedule. The Host, the Runtime and the Wo
 - [ ] How a Cycle starts (the exact command)
 - [ ] Interval (default 30 minutes)
 - [ ] Home directory (default `~/.openloops/`)
-- [ ] Model and effort of the Orchestrator
+- [ ] Model and effort of the Orchestrator (a model name, or `default` for the agent's own default model)
 - [ ] Permission mode
 - [ ] How to stop and remove
 

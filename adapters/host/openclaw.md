@@ -10,7 +10,7 @@ Home directory: `{{HOME_DIR}}` (the Open Loops home directory, default `~/.openl
 
 Interval: 30 minutes
 
-Orchestrator model: `{{ORCHESTRATOR_MODEL}}`, effort `{{ORCHESTRATOR_EFFORT}}` (the job's `--model` and `--thinking` options)
+Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (`default`: leave out `--model` and its value, and the agent uses its own default model), effort `{{ORCHESTRATOR_EFFORT}}` (the job's `--model` and `--thinking` options)
 
 Permission mode: never prompt, with no check (the same as bypass mode). OpenClaw's preset is `openclaw exec-policy preset yolo`. A scheduled job then runs unattended with the agent's full tool policy, including shell commands on the host; OpenClaw's docs say to treat it as unattended code execution.
 

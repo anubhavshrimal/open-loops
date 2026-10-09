@@ -131,7 +131,7 @@ The Host starts the Orchestrator on a schedule. A Host must:
 - [ ] How a Cycle starts (the exact command)
 - [ ] Interval (default 30 minutes)
 - [ ] Home directory (default `~/.openloops/`)
-- [ ] Model and effort of the Orchestrator
+- [ ] Model and effort of the Orchestrator (a model name, or `default` for the agent's own default model)
 - [ ] Permission mode
 - [ ] How to stop and remove
 
@@ -150,7 +150,7 @@ The Runtime spawns, watches and stops Workers. A Runtime must supply all five:
 `runtime.md` also says:
 
 - [ ] How to get each core status: `working`, `idle`, `Input Request`, `exited`.
-- [ ] The agent start command, model flags and extras (the Build Spec prefix, the option that starts the Exploration Worker agent for an Exploration Spec).
+- [ ] The agent start command, model flags (a model name, or `default`, which leaves the model flag out) and extras (the Build Spec prefix, the option that starts the Exploration Worker agent for an Exploration Spec).
 - [ ] The keys that answer an Input Request (one-shot approve, deny) and the keys never to send.
 - [ ] The Runtime ids to store in `state.json`.
 - [ ] Whether the Runtime makes worktrees itself. If not, the core makes each Workspace as a plain git worktree at `<repo>/.openloops/worktrees/<slug>`.

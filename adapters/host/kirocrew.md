@@ -10,7 +10,7 @@ Home directory: `{{HOME_DIR}}` (the Open Loops home directory, default `~/.openl
 
 Interval: 30 minutes
 
-Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (the job's `--model` option), effort `{{ORCHESTRATOR_EFFORT}}` (KiroCrew's `agent.reasoning_effort` setting, or the agent spec of a job agent named with `--agent <name>`)
+Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (the job's `--model` option; `default`: leave out `--model` and its value, and the agent uses its own default model), effort `{{ORCHESTRATOR_EFFORT}}` (KiroCrew's `agent.reasoning_effort` setting, or the agent spec of a job agent named with `--agent <name>`)
 
 Permission mode: auto (`--approval-mode auto`: KiroCrew approves every tool with no prompt and no check, which is the same as bypass mode; `auto` is the only value that `--approval-mode` takes). KiroCrew's security docs name the risk of an unbounded auto-approve window; read them before you turn it on.
 

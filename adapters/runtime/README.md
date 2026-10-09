@@ -15,7 +15,7 @@ A Runtime must supply all five:
 `runtime.md` also says:
 
 - [ ] How to get each core status: `working`, `idle`, `Input Request`, `exited`.
-- [ ] The agent start command, model flags and extras (the Build Spec prefix, the option that starts the Exploration Worker agent for an Exploration Spec).
+- [ ] The agent start command, model flags (a model name, or `default`, which leaves the model flag out) and extras (the Build Spec prefix, the option that starts the Exploration Worker agent for an Exploration Spec).
 - [ ] The keys that answer an Input Request (one-shot approve, deny) and the keys never to send.
 - [ ] The Runtime ids to store in `state.json`.
 - [ ] Whether the Runtime makes worktrees itself. If not, the core makes each Workspace as a plain git worktree at `<repo>/.openloops/worktrees/<slug>`.

@@ -8,7 +8,7 @@ Home directory: `{{HOME_DIR}}`
 
 Interval: 30 minutes
 
-Orchestrator model: `{{ORCHESTRATOR_MODEL}}`, effort `{{ORCHESTRATOR_EFFORT}}` (`-c model_reasoning_effort=...` in the command)
+Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (`default`: leave out `--model` and its value, and the agent uses its own default model), effort `{{ORCHESTRATOR_EFFORT}}` (`-c model_reasoning_effort=...` in the command)
 
 Permission mode: `{{CODEX_PERMISSION_FLAGS}}`. `codex exec` never asks for approval. Pick the sandbox:
 

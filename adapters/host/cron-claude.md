@@ -8,7 +8,7 @@ Home directory: `{{HOME_DIR}}`
 
 Interval: 30 minutes
 
-Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (add `--effort <level>` to the command to set the effort)
+Orchestrator model: `{{ORCHESTRATOR_MODEL}}` (`default`: leave out `--model` and its value, and the agent uses its own default model; add `--effort <level>` to the command to set the effort)
 
 Permission mode: `{{PERMISSION_MODE}}` (the Orchestrator runs unattended, so it must never wait on a permission prompt)
 

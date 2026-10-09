@@ -8,7 +8,7 @@ tmux server: the default server must already run before a Cycle starts, started 
 
 Agent: Claude Code (`claude`), interactive, in auto permission mode. For Codex, see "Codex agent".
 
-Worker model: `{{WORKER_MODEL}}`
+Worker model: `{{WORKER_MODEL}}` (`default`: leave out `--model` and its value; the agent then uses its own default model and follows its upgrades)
 
 Cap on live Workers: 5
 
