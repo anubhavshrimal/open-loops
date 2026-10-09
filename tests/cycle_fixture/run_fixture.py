@@ -494,7 +494,9 @@ class Scenario:
         self.cycles += 1
         label = f"scenario {self.number}: Cycle {self.cycles}"
         print(f"[fixture] {label}: start")
+        log = self.sb.home / "orchestrator.log"
         started, entries = time.time(), cycle_log_entries(self.sb)
+        before = log.read_text() if log.exists() else ""
         try:
             code = subprocess.run(
                 self.command, shell=True, cwd=self.sb.home, timeout=self.args.cycle_timeout_minutes * 60
@@ -504,6 +506,9 @@ class Scenario:
         print(f"[fixture] {label}: exit {code} after {time.time() - started:.0f}s")
         self.check(f"Cycle {self.cycles} exited 0 and added a Cycle log entry",
                    code == 0 and cycle_log_entries(self.sb) > entries, f"exit {code}")
+        after = log.read_text() if log.exists() else ""
+        self.check(f"Cycle {self.cycles} put its entry at the top and kept every earlier entry",
+                   after.startswith("## ") and after.endswith(before), f"{entries} entries before, {cycle_log_entries(self.sb)} after")
 
     def quiet_cycle(self, what):
         """Run one Cycle in which nothing changes, and check that it sends no message."""

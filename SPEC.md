@@ -225,7 +225,7 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 12. A Slot tool failure (Tracker, Runtime, Review System, or a missing notes file other than `notifier.md`) sends one `system_alert`, stops the Cycle with no other state change, and is logged. Recovery sends `system_recovered`. A Notifier failure never stops the Cycle. A missing `notifier.md` means the log-file Notifier at `<home>/notifications.log`.
 13. The Orchestrator prompt names no Slot product and never states the Cycle interval. Products and intervals live only in the notes files.
 14. The Orchestrator runs only shell commands that never wait for input.
-15. Every Cycle adds one entry to `orchestrator.log`.
+15. Every Cycle adds one entry at the top of `orchestrator.log` and keeps every earlier entry (up to 500).
 
 ## 12. Tests
 

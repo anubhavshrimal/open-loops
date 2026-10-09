@@ -297,4 +297,12 @@ After every Cycle, add a timestamped entry to `<home>/orchestrator.log`. Format:
 - Blocked: <any Blocked Tasks>
 ```
 
-Use the Host's local time with its UTC offset for all timestamps. Insert new entries at the TOP of the file (newest first). After inserting, if the file has more than 500 entries, delete the oldest entries from the bottom to keep 500. Keep entries short (3-7 lines). This log is the audit trail for debugging Orchestrator decisions.
+Use the Host's local time with its UTC offset for all timestamps. New entries go at the TOP of the file (newest first). Never rewrite the file from memory: an entry that you drop is lost for good. Insert the entry in exactly this way:
+
+1. Write the new entry, then one empty line, to `<home>/orchestrator.log.entry` with your file tools.
+2. Run this one command. It puts the entry above every earlier entry, keeps them byte for byte, and keeps at most 500 entries (it drops the oldest from the bottom):
+   ```sh
+   { cat <home>/orchestrator.log.entry; cat <home>/orchestrator.log 2>/dev/null; } | awk '/^## /{n++} n<=500' > <home>/orchestrator.log.new && command mv -f <home>/orchestrator.log.new <home>/orchestrator.log && command rm -f <home>/orchestrator.log.entry
+   ```
+
+Keep entries short (3-7 lines). This log is the audit trail for debugging Orchestrator decisions.

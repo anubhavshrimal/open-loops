@@ -11,7 +11,7 @@ Each scenario builds its own sandbox, a new temp directory with:
 
 A scenario that starts in the middle of the Open Loop also makes what earlier Cycles would have left: the Task branch `ol-<slug>` in a worktree under `.openloops/worktrees/`, the Worker's PR comment on the Task (`Branch:`, `Commit:`, `Checks:`), and the `state.json` record. Between Cycles the fixture acts as the Owner where the scenario says so (it moves a Task to Done, merges a branch, adds a missing file).
 
-Each Cycle runs the command in the "How a Cycle starts" block of the example `host.md`. Every Cycle must exit 0 and add a Cycle log entry. Every Worker name is unique across scenarios, because they all share the Runtime server.
+Each Cycle runs the command in the "How a Cycle starts" block of the example `host.md`. Every Cycle must exit 0 and add a Cycle log entry at the top, with every earlier entry kept as it was. Every Worker name is unique across scenarios, because they all share the Runtime server.
 
 ## Scenarios
 
