@@ -27,10 +27,10 @@ A closed issue counts as Done, so a closed upstream Task resolves a dependency.
 
 An open issue has at most one `ol:` state label. If you find two, use the first one in this order: `ol:blocked`, `ol:in-review`, `ol:working`, `ol:ready`. Then fix the labels with "Change state".
 
-The Owner creates the four labels once (setup can run this for the Owner):
+The Owner creates the four labels once (setup can run this for the Owner; `--force` makes a second run update the labels, not fail):
 
 ```sh
-for l in ready working blocked in-review; do gh label create "ol:$l" -R {{TRACKER_OWNER}}/{{TRACKER_REPO}}; done
+for l in ready working blocked in-review; do gh label create "ol:$l" --force -R {{TRACKER_OWNER}}/{{TRACKER_REPO}}; done
 ```
 
 ## Task body and the `Spec:` line
