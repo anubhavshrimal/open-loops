@@ -32,6 +32,7 @@ Check these without questions. Record what you find.
 | Agent CLIs | `command -v claude codex` |
 | Slot CLIs | `command -v git gh herdr tmux timeout crontab python3 npx` |
 | GitHub login | `gh auth status` |
+| `gh` knows sub-issues and dependencies | `gh issue view --help` lists the JSON fields `subIssues` and `blockedBy`. If not, the GitHub Issues Tracker cannot read children or dependencies: tell the Owner to update `gh` |
 | MCP servers | `claude mcp list`; for Codex, the `[mcp_servers]` tables in `~/.codex/config.toml` |
 | Are you a Host? | Are you a KiroCrew or OpenClaw agent, or did the Owner say "You are the Host"? Then that product is the Host. |
 | Existing setup | The notes files `<home>/{tracker,host,runtime,notifier,review}.md`, `<home>/state.json`, and a crontab line with "Run one Open Loops Cycle" (`crontab -l`) |

@@ -71,6 +71,7 @@ for l in ready working blocked in-review; do gh label create "ol:$l" --force -R 
 ## Quirks
 
 - The Orchestrator and the Worker comment as the Owner's GitHub user. A Follow-up is found only by its prefix, never by its author. Agents never start a comment with the Follow-up prefix.
+- `gh` must know the JSON fields `subIssues` and `blockedBy` (`gh issue view --help` lists them). An older `gh` fails on them, and each Cycle is then a Tracker tool failure: update `gh`.
 - `gh issue list` returns 30 issues unless you pass `--limit`.
 - More than one `--label` means "has all of these labels". Run one query for each state.
 - A non-zero exit from `gh` (no login, network error, rate limit, missing repo) is a Tracker tool failure (see the core rule on Slot tool failure). Read the labels first, and remove only a label that the issue has.
