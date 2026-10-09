@@ -8,6 +8,8 @@ Remote to push to: none. The Local branch never pushes: the Workspace is a git w
 
 Open PRs as: draft (the Local branch has no draft state; the setting has no effect here)
 
+Review rounds: new commits
+
 Review skill: `code-review` (from mattpocock/skills)
 
 ## Projects
@@ -18,10 +20,10 @@ Review skill: `code-review` (from mattpocock/skills)
 
 ## Worker capabilities
 
-- **Push a branch:** nothing to do. Commit on `ol-<slug>` in the Workspace; the branch is already in the project repo.
+- **Publish a branch:** nothing to do. Commit on `ol-<slug>` in the Workspace; the branch is already in the project repo.
 - **Open a PR:** post a Tracker comment on the Task that names the branch (`Branch: ol-<slug>`), the latest commit SHA, and a summary. That comment is the PR.
 - **PR reference** (the form to put in Tracker comments): `Branch: ol-<slug>`
-- **Push commits:** commit on the same branch. There is nothing to push.
+- **Publish more commits:** commit on the same branch. There is nothing to push.
 - **Reply to a Review comment:** post a Tracker comment that starts with `Re <comment-id>:` and says what you did (with the commit SHA), or why you push back.
 - **Checks:** run the project's build and test command from the table above in the Workspace before each PR comment. Put the result in the Tracker comment as `Checks: pass` or `Checks: fail`, with the failing output.
 

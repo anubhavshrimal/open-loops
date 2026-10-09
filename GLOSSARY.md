@@ -108,6 +108,10 @@ _Avoid_: CR, MR, change request
 A comment on a PR from anyone, including the Owner.
 _Avoid_: feedback, CR comment
 
+**Review round**:
+The work of one Respawn on Review comments or a failed Check: the fix, its publish, and a reply to each Review comment. `review.md` says whether a round adds new commits or amends the commit.
+_Avoid_: revision cycle, iteration
+
 **Check**:
 An automated pass/fail result on a PR's latest revision, such as a build or test run.
 _Avoid_: pipeline status, build status

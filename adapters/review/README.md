@@ -6,9 +6,9 @@ The Review System holds PRs, Review comments and Checks.
 
 The Worker must be able to:
 
-- [ ] Push a branch.
+- [ ] Publish a branch (push it, upload it with a review tool, or nothing).
 - [ ] Open a PR (as a draft or as ready, per `review.md`).
-- [ ] Push more commits to the PR.
+- [ ] Publish more commits to the PR.
 - [ ] Reply to a Review comment.
 
 The Orchestrator must be able to:
@@ -20,7 +20,8 @@ The Orchestrator must be able to:
 `review.md` also says:
 
 - [ ] `Open PRs as: draft | ready` (default: draft).
-- [ ] The remote to push to.
+- [ ] The remote to push to, if the Review System pushes.
+- [ ] `Review rounds: new commits | amend` (default: new commits).
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
@@ -38,15 +39,16 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 
 | Capability | Line in `github-pr.md` |
 |---|---|
-| Push a branch | Worker capabilities: "Push a branch" |
+| Publish a branch | Worker capabilities: "Publish a branch" |
 | Open a PR | Worker capabilities: "Open a PR" |
-| Push commits | Worker capabilities: "Push commits" |
+| Publish more commits | Worker capabilities: "Publish more commits" |
 | Reply to a Review comment | Worker capabilities: "Reply to a Review comment" |
 | Read PR state | Orchestrator capabilities: "Read PR state" |
 | Read Review comments with ids | Orchestrator capabilities: "Read Review comments with ids" |
 | Read Checks | Orchestrator capabilities: "Read Checks" (Worker side: "Checks") |
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |
+| Review rounds | "Review rounds" line |
 | PR reference | Worker capabilities: "PR reference" |
 | Review skill | "Review skill" line |
 | Build and test command | "Projects" table |
@@ -56,15 +58,16 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 
 | Capability | Line in `local-branch.md` |
 |---|---|
-| Push a branch | Worker capabilities: "Push a branch" |
+| Publish a branch | Worker capabilities: "Publish a branch" |
 | Open a PR | Worker capabilities: "Open a PR" |
-| Push commits | Worker capabilities: "Push commits" |
+| Publish more commits | Worker capabilities: "Publish more commits" |
 | Reply to a Review comment | Worker capabilities: "Reply to a Review comment" |
 | Read PR state | Orchestrator capabilities: "Read PR state" |
 | Read Review comments with ids | Orchestrator capabilities: "Read Review comments with ids" |
 | Read Checks | Orchestrator capabilities: "Read Checks" (Worker side: "Checks") |
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |
+| Review rounds | "Review rounds" line |
 | PR reference | Worker capabilities: "PR reference" |
 | Review skill | "Review skill" line |
 | Build and test command | "Projects" table |

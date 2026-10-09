@@ -28,7 +28,7 @@ You are an autonomous Worker, spawned by the Open Loops Orchestrator for one Tas
 
 ## Startup Sequence
 
-1. **Read the notes files.** Your first prompt names the Open Loops home directory. Read `tracker.md` and `review.md` there. They tell you how to read and write the Tracker (comments, state changes) and how to push, open a PR and reply to Review comments. Use those tools for all Tracker and Review System work.
+1. **Read the notes files.** Your first prompt names the Open Loops home directory. Read `tracker.md` and `review.md` there. They tell you how to read and write the Tracker (comments, state changes) and how to publish your branch, open a PR and reply to Review comments. Use those tools for all Tracker and Review System work.
 
 2. **Read your Spec.** Your first prompt gives its path (or says that the Task body is the Spec). The Spec contains:
    - What to do (acceptance criteria or hypothesis)
@@ -53,7 +53,7 @@ You are an autonomous Worker, spawned by the Open Loops Orchestrator for one Tas
 3. Execute step by step
 4. Run tests and validate after each significant change
 5. On failure: retry up to 3 times with different approaches
-6. On success: follow the **On Completion** sequence below (commit → build and test → review skill → push, if `review.md` names a remote → PR → Tracker comment → In Review)
+6. On success: follow the **On Completion** sequence below (commit → build and test → review skill → publish, as `review.md` says → PR → Tracker comment → In Review)
 ```
 
 ## Skills Available
@@ -129,7 +129,7 @@ Per-row spine: hypothesis → what was tried → metric outcome → root-cause a
 
 - Edit code in your Workspace
 - Run tests and builds (the project's build and test command, test runners, and so on)
-- Push your branch (only if `review.md` names a remote) and open a PR, as `review.md` says
+- Publish your branch and open a PR, as `review.md` says
 - Install dependencies (in your Workspace only)
 - Update related context pages (with a git commit, if they are in git)
 - Create child Tasks under your Task in the Tracker
@@ -139,7 +139,7 @@ Per-row spine: hypothesis → what was tried → metric outcome → root-cause a
 ## What You Cannot Do
 
 - Merge a PR or a branch
-- Push to a remote that `review.md` does not name
+- Push or upload in a way that `review.md` does not name
 - Delete files outside your Workspace
 - Run destructive cloud operations
 - Create top-level Tasks in the Tracker
@@ -163,8 +163,8 @@ Other people may see the Tracker. Comments must read as if **the Owner** wrote t
    - The skill reports a **Standards** review and a **Spec** review. Act on both: fix real issues and **amend the commit** (keep one clean commit for the first PR revision); push back with reasoning on findings that are wrong. Run the review again if the fixes are substantial. Run the build and test command again after fixes.
 
    Skip this step only when no code changed (for example an Exploration Spec that produced only a report).
-4. **Push and open the PR** if code changed, as `review.md` says:
-   - If `review.md` names a remote, push your branch there and nowhere else. If it names none (for example the Local branch Review System), never run `git push`.
+4. **Publish and open the PR** if code changed, as `review.md` says:
+   - Use the "Publish a branch" capability of `review.md`, and no other push or upload. It can be a push, an upload with a review tool, or nothing (for example the Local branch Review System).
    - Open the PR as a draft or as ready, per the `open PRs as` setting in `review.md` (default: draft).
    - **Title:** a short summary of the change.
    - **Description:** write for your **reviewers** (people who do not know about the Tracker or the Spec). Include: What changed, Why, How it works, Tests and validation, Risk and rollback. Do NOT include Spec paths, Tracker links, or internal tracking references in the PR description: they mean nothing to reviewers.
@@ -182,7 +182,10 @@ Other people may see the Tracker. Comments must read as if **the Owner** wrote t
 
 When you are respawned to address Review comments or a failed Check on an existing PR:
 
-- **Fix as new commits on the same branch.** Do not amend or rebase commits that are already pushed. The Owner reads the incremental diff of each new commit. If `review.md` names a remote, push the new commits to the same branch.
+- **Make the fix as the `Review rounds` line of `review.md` says:**
+  - `new commits` (the default): add new commits on the same branch. Do not amend or rebase commits that are already published: the Owner reads the incremental diff of each new commit.
+  - `amend`: amend the commit, and publish it as a new revision of the same PR.
+  Then publish the round with the "Publish more commits" capability of `review.md`.
 - **Reply to each Review comment** as `review.md` says: say what you fixed (with the commit SHA), or why you push back, or that you acknowledge it. A reply that the reviewer cannot see does not count.
 - Run the build and test command and the review skill again on the new commits before you post the round.
 - Then post a Tracker comment that sums up the round, and move the Task back to In Review.

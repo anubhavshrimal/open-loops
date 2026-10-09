@@ -92,8 +92,8 @@ Step 1 comes before step 2, so that a completion in this Cycle clears a dependen
 ## 7. The Worker
 
 - It reads `tracker.md` and `review.md`, then its Spec, then works in a Closed Loop until the goal is met or it is truly blocked.
-- **Completion steps:** commit → the project's build and test command → the review skill that `review.md` names (default `code-review` from mattpocock/skills) → push (only to the remote that `review.md` names) → open the PR (draft or ready, per `review.md`) → verify → a Tracker comment with the PR reference → move the Task to In Review → update the Spec's Status checklist.
-- On Review comments: new commits on the same branch, and a reply to each Review comment.
+- **Completion steps:** commit → the project's build and test command → the review skill that `review.md` names (default `code-review` from mattpocock/skills) → publish (only as `review.md` says: a push, an upload, or nothing) → open the PR (draft or ready, per `review.md`) → verify → a Tracker comment with the PR reference → move the Task to In Review → update the Spec's Status checklist.
+- On Review comments: a Review round. The fix is new commits on the same branch, or an amended commit, as the `Review rounds` line of `review.md` says, then a reply to each Review comment.
 - If blocked: a Tracker comment with the reason, then move the Task to Blocked.
 - It writes the Tracker itself (comments, state). The Orchestrator verifies and corrects.
 - It never merges and never exits by itself. The Orchestrator stops it.
@@ -172,9 +172,9 @@ The Review System holds PRs, Review comments and Checks.
 
 The Worker must be able to:
 
-- [ ] Push a branch.
+- [ ] Publish a branch (push it, upload it with a review tool, or nothing).
 - [ ] Open a PR (as a draft or as ready, per `review.md`).
-- [ ] Push more commits to the PR.
+- [ ] Publish more commits to the PR.
 - [ ] Reply to a Review comment.
 
 The Orchestrator must be able to:
@@ -186,7 +186,8 @@ The Orchestrator must be able to:
 `review.md` also says:
 
 - [ ] `Open PRs as: draft | ready` (default: draft).
-- [ ] The remote to push to.
+- [ ] The remote to push to, if the Review System pushes.
+- [ ] `Review rounds: new commits | amend` (default: new commits).
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
@@ -217,7 +218,7 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 6. At most one live Worker for each Task, and at most the cap of live `ol-` Workers in total (default 5).
 7. A Workspace is never deleted or force-overwritten by Open Loops. A Respawn reuses it.
 8. No agent merges. The Worker never runs a merge command; the Owner merges.
-9. A Worker pushes only to the remote that `review.md` names. With no remote, it never pushes.
+9. A Worker publishes only with the capabilities that `review.md` names. It never pushes or uploads in another way. The Orchestrator approves a push or upload that `review.md` names, and denies any other.
 10. A Worker never exits by itself. The Orchestrator stops it.
 11. A comment-triggered Respawn happens once for each new Review comment id. A failed Check is limited only by the live-Worker guard.
 12. A Slot tool failure (Tracker, Runtime, Review System, or a missing notes file) sends one `system_alert`, stops the Cycle with no other state change, and is logged. Recovery sends `system_recovered`. A Notifier failure never stops the Cycle.

@@ -8,6 +8,8 @@ Remote to push to: `origin` (the GitHub repo of each project in the table below)
 
 Open PRs as: draft (or `ready`; with `draft`, the Owner looks first and runs `gh pr ready <n>`; a draft PR is still visible on a public repo)
 
+Review rounds: new commits
+
 Review skill: `code-review` (from mattpocock/skills)
 
 ## Projects
@@ -20,13 +22,13 @@ Review skill: `code-review` (from mattpocock/skills)
 
 Run each command in the Workspace. `<base>` is the Spec's `branch`. `<owner>/<repo>` is the GitHub repo of the project in the table above.
 
-- **Push a branch:** `git push -u origin ol-<slug>`
+- **Publish a branch:** `git push -u origin ol-<slug>`
 - **Open a PR:**
   - Open PRs as `draft`: `gh pr create --draft --base <base> --head ol-<slug> --title "<title>" --body-file <file>`
   - Open PRs as `ready`: the same command without `--draft`.
   - `gh pr create` prints the PR URL. That URL is the PR reference.
 - **PR reference** (the form to put in Tracker comments): `PR: https://github.com/<owner>/<repo>/pull/<n>`. Every `gh pr` command takes the URL in place of `<n>`.
-- **Push commits:** commit on the same branch, then `git push`. Never force-push and never rewrite commits that are already pushed: the Owner reads the new commits as an incremental diff.
+- **Publish more commits:** commit on the same branch, then `git push`. Never force-push and never rewrite commits that are already pushed: the Owner reads the new commits as an incremental diff.
 - **Reply to a Review comment:** start every reply with the marker line `<!-- open-loops:worker -->`, then say what you did (with the commit SHA) or why you push back.
   - Inline comment (on a line of the diff): `gh api repos/<owner>/<repo>/pulls/<n>/comments/<comment-id>/replies -F body=@<file>`. Use the numeric inline comment id. If the comment has an `in_reply_to_id`, reply to that id instead: GitHub takes replies only to the first comment of a thread.
   - Conversation comment or review summary: `gh pr comment <n> --body-file <file>`, and quote the comment you answer.
