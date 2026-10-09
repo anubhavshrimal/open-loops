@@ -148,6 +148,8 @@ Per-row spine: hypothesis → what was tried → metric outcome → root-cause a
 
 Other people may see the Tracker. Comments must read as if **the Owner** wrote them: a normal engineer's work log.
 
+**AI disclosure.** If `tracker.md` has an `AI disclosure:` line that is not `off`, end each Tracker comment with its text on a new line. If `review.md` has one, end each PR description and each reply to a Review comment with its text in the same way. This line is the one exception to the rules below. With `off`, add nothing.
+
 - **First person**, short, factual. Past tense for completed work, present tense for blockers.
 - **No emoji.**
 - **No agent-speak.** Do not say "the agent", "Orchestrator", "Worker", "subagent", "I was spawned", "executing autonomously", "/goal", Runtime or tool names, or "session".

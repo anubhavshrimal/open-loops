@@ -64,6 +64,10 @@ _Avoid_: pipeline, workflow
 A new instruction from the Owner on a Task that already has results, marked with an agreed prefix.
 _Avoid_: action comment, continuation
 
+**AI disclosure**:
+An optional line that a Worker adds at the end of its Tracker comments and PR text to say that an agent wrote them. The Owner sets it in `tracker.md` and `review.md`; the default is off.
+_Avoid_: AI label, bot signature
+
 ## States
 
 **Backlog**:

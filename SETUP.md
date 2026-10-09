@@ -70,6 +70,7 @@ Notes for each Slot:
 
   Settle the permissions with the Owner: auto or bypass mode, and any allow rules the Owner wants for their agent. Do not prescribe an allowlist.
 - **Runtime:** the Runtime server (tmux or Herdr) must run before a Cycle starts, and the Owner starts it from their own shell, never you: a server that an agent's shell starts passes that agent's sandbox to every Worker. Tell the Owner how (`tmux new-session -d -s main`, or open `herdr` once).
+- **AI disclosure:** ask one question: "Mark the Workers' Tracker comments and PR text as written with an AI agent?" Default: no (`AI disclosure: off`). With yes, write `AI disclosure: _Written with an AI agent._` (or the Owner's own text) in both `tracker.md` and `review.md`.
 - **Models:** `host.md` names the Orchestrator's model and effort, `runtime.md` the Workers'. Ask for each: `default` (recommended: the agent's own default model, which follows its upgrades) or a model name. Write `default` or the name in the notes file. With `default`, leave `--model` and its value out of the start commands that you write: the crontab line or the Host's scheduled job (`host.md`), and the Worker start commands (`runtime.md`). The Owner controls cost and quality here.
 
 ## 4. Ask about the project

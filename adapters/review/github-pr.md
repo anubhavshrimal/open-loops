@@ -10,6 +10,8 @@ Open PRs as: draft (or `ready`; with `draft`, the Owner looks first and runs `gh
 
 Review rounds: new commits
 
+AI disclosure: off
+
 Review skill: `code-review` (from mattpocock/skills)
 
 ## Projects

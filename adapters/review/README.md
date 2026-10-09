@@ -22,6 +22,7 @@ The Orchestrator must be able to:
 - [ ] `Open PRs as: draft | ready` (default: draft).
 - [ ] The remote to push to, if the Review System pushes.
 - [ ] `Review rounds: new commits | amend` (default: new commits).
+- [ ] `AI disclosure: off | <text>` (default: off).
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
@@ -49,6 +50,7 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |
 | Review rounds | "Review rounds" line |
+| AI disclosure | "AI disclosure" line |
 | PR reference | Worker capabilities: "PR reference" |
 | Review skill | "Review skill" line |
 | Build and test command | "Projects" table |
@@ -68,6 +70,7 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |
 | Review rounds | "Review rounds" line |
+| AI disclosure | "AI disclosure" line |
 | PR reference | Worker capabilities: "PR reference" |
 | Review skill | "Review skill" line |
 | Build and test command | "Projects" table |

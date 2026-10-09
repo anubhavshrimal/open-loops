@@ -10,6 +10,8 @@ Open PRs as: draft (the Local branch has no draft state; the setting has no effe
 
 Review rounds: new commits
 
+AI disclosure: off
+
 Review skill: `code-review` (from mattpocock/skills)
 
 ## Projects

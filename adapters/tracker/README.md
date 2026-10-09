@@ -14,7 +14,7 @@ A Tracker must let the Orchestrator and the Worker:
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
 
-`tracker.md` holds the tools for each capability, the map from the six core states (Backlog, Ready, Working, Blocked, In Review, Done) to the native names, the IDs, the Follow-up prefix, and the quirks of the tool.
+`tracker.md` holds the tools for each capability, the map from the six core states (Backlog, Ready, Working, Blocked, In Review, Done) to the native names, the IDs, the Follow-up prefix, the AI disclosure line (`AI disclosure: off | <text>`, default off), and the quirks of the tool.
 
 Rules that the core applies to every Tracker:
 
@@ -43,6 +43,7 @@ Rules that the core applies to every Tracker:
 | Change a Task's state | Capabilities: "Change state" |
 | Map of the six states | "States" table |
 | Follow-up prefix | "Follow-up prefix" line |
+| AI disclosure | "AI disclosure" line |
 | `Spec:` line rule | "Task body and the `Spec:` line" |
 
 ## Contract map: `markdown.md`
@@ -58,3 +59,4 @@ Rules that the core applies to every Tracker:
 | Change a Task's state | Capabilities: "Change state" |
 | Map of the six states | "States" table |
 | Follow-up prefix | "Follow-up prefix" line |
+| AI disclosure | "AI disclosure" line |

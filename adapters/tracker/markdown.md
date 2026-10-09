@@ -8,6 +8,8 @@ Task directory: `{{TRACKER_DIR}}`
 
 Follow-up prefix: `ACTION:`
 
+AI disclosure: off
+
 ## Task file format
 
 A Task is the file `{{TRACKER_DIR}}/<task-id>.md`. The task id is the file name without `.md` (lowercase, digits and hyphens). Example:

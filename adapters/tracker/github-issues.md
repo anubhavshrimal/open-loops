@@ -8,6 +8,8 @@ Tracker repo: `{{TRACKER_OWNER}}/{{TRACKER_REPO}}`. Every command below passes `
 
 Follow-up prefix: `ACTION:`
 
+AI disclosure: off
+
 ## States
 
 The state is one label on an open issue. Done is a closed issue. Pull requests are never Tasks (`gh issue list` does not return them).

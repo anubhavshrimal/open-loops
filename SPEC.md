@@ -114,7 +114,7 @@ The Tracker stores Tasks and their states. A Tracker must let the Orchestrator a
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
 
-`tracker.md` holds the tools for each capability, the map from the six states to the native names, the IDs, the Follow-up prefix (default `ACTION:`), and the quirks of the tool. Rules for every Tracker: the Spec location and spawn fields of section 5; only leaf Tasks spawn; a dependency is resolved only when the upstream Task is Done (`tracker.md` says if a closed Task counts as Done); whether a Follow-up is fulfilled is the Orchestrator's judgment. Examples: [GitHub Issues](adapters/tracker/github-issues.md) (default), [Markdown files](adapters/tracker/markdown.md) (fallback).
+`tracker.md` holds the tools for each capability, the map from the six states to the native names, the IDs, the Follow-up prefix (default `ACTION:`), the AI disclosure line (default off), and the quirks of the tool. Rules for every Tracker: the Spec location and spawn fields of section 5; only leaf Tasks spawn; a dependency is resolved only when the upstream Task is Done (`tracker.md` says if a closed Task counts as Done); whether a Follow-up is fulfilled is the Orchestrator's judgment. Examples: [GitHub Issues](adapters/tracker/github-issues.md) (default), [Markdown files](adapters/tracker/markdown.md) (fallback).
 
 ### Host
 
@@ -188,6 +188,7 @@ The Orchestrator must be able to:
 - [ ] `Open PRs as: draft | ready` (default: draft).
 - [ ] The remote to push to, if the Review System pushes.
 - [ ] `Review rounds: new commits | amend` (default: new commits).
+- [ ] `AI disclosure: off | <text>` (default: off).
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
