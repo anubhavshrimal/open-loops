@@ -12,7 +12,7 @@ Interval: 30 minutes
 
 Orchestrator model: `{{ORCHESTRATOR_MODEL}}`, effort `{{ORCHESTRATOR_EFFORT}}` (the job's `--model` and `--thinking` options)
 
-Permission mode: never prompt. OpenClaw's preset is `openclaw exec-policy preset yolo`. A scheduled job then runs unattended with the agent's full tool policy, including shell commands on the host; OpenClaw's docs say to treat it as unattended code execution.
+Permission mode: never prompt, with no check (the same as bypass mode). OpenClaw's preset is `openclaw exec-policy preset yolo`. A scheduled job then runs unattended with the agent's full tool policy, including shell commands on the host; OpenClaw's docs say to treat it as unattended code execution.
 
 ## How a Cycle starts
 
