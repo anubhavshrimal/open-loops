@@ -64,6 +64,7 @@ The Orchestrator answers a prompt only when it is safe and the Spec makes the an
 ## A Review comment or Follow-up gives no Respawn
 
 - The Task must be In Review (or Ready, for a Follow-up).
+- The comment's author must be trusted: you, or a user with write access to the repo. A bot is not trusted. The Cycle log names each skipped comment and its author.
 - A Follow-up must start with the prefix in `tracker.md` (default `ACTION:`), exactly, at the start of the comment. Case matters.
 - A Review comment gives one Respawn. The Orchestrator remembers the last comment id it acted on (`review_state.last_comment_id`), so a new comment is needed for the next Respawn.
 - If a Worker for the Task is still live, the Orchestrator waits for it to finish first.

@@ -68,7 +68,7 @@ A Cycle is one pass of the Orchestrator over the Tracker. The Host starts each C
 2. **Read Ready Tasks.** Find the Ready Tasks. Only leaf Tasks spawn. Look for a pending Follow-up, find the Spec, and apply the dependency gate.
 3. **Spawn Workers.** Most dependents first, up to the cap. Make or reuse the Workspace, make the state path, start the Worker with its first prompt, move the Task to Working, record it, notify.
 4. **Cap check.** At the cap, spawn nothing more and log which Tasks wait.
-5. **Monitor In Review.** For each Task: a pending Follow-up, a new Review comment or a failed Check gives a Respawn. An approved, merged or closed PR gives Done. A fulfilled Follow-up gives no action: the Task stays In Review until the PR state or the Owner moves it.
+5. **Monitor In Review.** For each Task: a pending Follow-up or a new Review comment, each from a trusted author, or a failed Check gives a Respawn. An approved, merged or closed PR gives Done. A fulfilled Follow-up gives no action: the Task stays In Review until the PR state or the Owner moves it.
 6. **Monitor Blocked.** If the blocker has cleared, move the Task back to Ready. Otherwise notify the Owner once.
 7. **Log the Cycle** in `orchestrator.log`.
 
@@ -108,7 +108,8 @@ The Tracker stores Tasks and their states. A Tracker must let the Orchestrator a
 
 - [ ] Find the Tasks in a state.
 - [ ] Read a Task's body.
-- [ ] Read a Task's comments, each with an id.
+- [ ] Read a Task's comments, each with an id and its author.
+- [ ] Tell whether an author is trusted (the Owner, or a user with write access).
 - [ ] Read a Task's children.
 - [ ] Read a Task's dependencies (and its dependents).
 - [ ] Post a comment on a Task.
@@ -181,7 +182,8 @@ The Worker must be able to:
 The Orchestrator must be able to:
 
 - [ ] Read a PR's state: open, approved, merged, closed.
-- [ ] Read a PR's Review comments, each with an id.
+- [ ] Read a PR's Review comments, each with an id and its author.
+- [ ] Tell whether an author is trusted (the Owner, or a user with write access).
 - [ ] Read a PR's Checks.
 
 `review.md` also says:
@@ -227,6 +229,7 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 13. The Orchestrator prompt names no Slot product and never states the Cycle interval. Products and intervals live only in the notes files.
 14. The Orchestrator runs only shell commands that never wait for input.
 15. Every Cycle adds one entry at the top of `orchestrator.log` and keeps every earlier entry (up to 500).
+16. Only a comment from a trusted author (the Owner, or a user with write access) can start a Worker or reach a Worker as an instruction. Other comments, also from bots, are logged and skipped.
 
 ## 12. Tests
 

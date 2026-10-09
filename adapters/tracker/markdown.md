@@ -39,7 +39,7 @@ ACTION: also add a second line.
 - `parent`: the id of the parent Task, or `""`.
 - `depends_on`: the ids of upstream Tasks.
 - Body: an optional `Spec:` line, then free text.
-- `## Comments`: always the last section. Each comment is a `### <comment-id> | <timestamp> | <author>` heading, then the text. Comment ids are `c1`, `c2`, ... in order; a new comment takes the next number. Timestamps are ISO 8601 with UTC offset. Author is `owner` for the Owner and `worker` or `orchestrator` for agents.
+- `## Comments`: always the last section. Each comment is a `### <comment-id> | <timestamp> | <author>` heading, then the text. Comment ids are `c1`, `c2`, ... in order; a new comment takes the next number. Timestamps are ISO 8601 with UTC offset. Author is `owner` for the Owner and `worker` or `orchestrator` for agents. Only `owner` is a trusted author.
 
 ## States
 
@@ -58,7 +58,8 @@ This Tracker has no native close: only the state `Done` resolves a dependency.
 
 - **Find Tasks in a state:** read the frontmatter of every `*.md` file in the Task directory and keep those whose `state:` matches. Example: `grep -l '^state: Ready$' {{TRACKER_DIR}}/*.md`.
 - **Read a Task's body:** read the file; the body is the text between the frontmatter and `## Comments`.
-- **Read a Task's comments:** the `###` entries under `## Comments`, oldest first. The comment id is the first field of the heading.
+- **Read a Task's comments:** the `###` entries under `## Comments`, oldest first. The comment id is the first field of the heading; the author is the last field.
+- **Tell whether an author is trusted:** only the author `owner` is trusted.
 - **Read a Task's children:** the Tasks whose `parent:` is this Task's id. Example: `grep -l '^parent: "\?<task-id>"\?$' {{TRACKER_DIR}}/*.md`.
 - **Read a Task's dependencies:** the ids in its `depends_on:`. Its dependents are the Tasks whose `depends_on:` contains its id.
 - **Post a comment:** append a new `### <next-id> | <timestamp> | <author>` heading and the text at the end of the file.

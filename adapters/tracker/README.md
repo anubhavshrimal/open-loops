@@ -8,7 +8,8 @@ A Tracker must let the Orchestrator and the Worker:
 
 - [ ] Find the Tasks in a state.
 - [ ] Read a Task's body.
-- [ ] Read a Task's comments, each with an id.
+- [ ] Read a Task's comments, each with an id and its author.
+- [ ] Tell whether an author is trusted (the Owner, or a user with write access).
 - [ ] Read a Task's children.
 - [ ] Read a Task's dependencies (and its dependents).
 - [ ] Post a comment on a Task.
@@ -38,6 +39,7 @@ Rules that the core applies to every Tracker:
 | Find the Tasks in a state | Capabilities: "Find Tasks in a state" |
 | Read a Task's body | Capabilities: "Read a Task's body" |
 | Read a Task's comments, with ids | Capabilities: "Read a Task's comments" |
+| Tell whether an author is trusted | Capabilities: "Tell whether an author is trusted" |
 | Read a Task's children | Capabilities: "Read a Task's children" |
 | Read a Task's dependencies and dependents | Capabilities: "Read a Task's dependencies" |
 | Post a comment | Capabilities: "Post a comment" |
@@ -55,6 +57,7 @@ Rules that the core applies to every Tracker:
 | Find the Tasks in a state | Capabilities: "Find Tasks in a state" |
 | Read a Task's body | Capabilities: "Read a Task's body" |
 | Read a Task's comments, with ids | Capabilities: "Read a Task's comments" |
+| Tell whether an author is trusted | Capabilities: "Tell whether an author is trusted" |
 | Read a Task's children | Capabilities: "Read a Task's children" |
 | Read a Task's dependencies and dependents | Capabilities: "Read a Task's dependencies" |
 | Post a comment | Capabilities: "Post a comment" |

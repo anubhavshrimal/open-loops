@@ -55,7 +55,10 @@ Run each command in the Workspace. `<base>` is the Spec's `branch`. `<owner>/<re
 
   The comment id in this Review System is `<time>/<id>`, for example `2026-10-06T22:15:00Z/1234567`: the time, then the `id` field. Store this form in `last_comment_id`. A comment is new when its time is later than the time in `last_comment_id`. This still works when that comment was deleted.
 
-  Skip every comment whose body starts with `<!-- open-loops:worker -->`: those are the Worker's own replies.
+  Skip every comment whose body starts with `<!-- open-loops:worker -->`: those are the Worker's own replies. Skip every comment whose author is not trusted.
+- **Tell whether an author is trusted:**
+  `gh api repos/<owner>/<repo>/collaborators/<login>/permission --jq .permission`
+  `admin` or `write` → trusted. `read`, `none`, or an error (for example HTTP 403) → not trusted. Bots get `none`, so a bot's comment is not trusted. Check each login once per Cycle.
 - **Read Checks** (on the latest commit of the PR):
   `gh pr checks <n> --json name,state,bucket,link,workflow`
   - Failed: any Check with `bucket` `fail` or `cancel`.

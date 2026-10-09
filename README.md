@@ -42,7 +42,7 @@ flowchart LR
 2. **The Host starts a Cycle** on a schedule. The Orchestrator is a new agent session each Cycle; `~/.openloops/state.json` is its only memory.
 3. **The Orchestrator spawns a Worker** in a git worktree at `<repo>/.openloops/worktrees/<slug>`, unless an upstream Task is not Done yet (then the Task is Gated and waits).
 4. **The Worker runs in a Closed Loop:** it works until the Spec's goal is met, then commits, runs your build and test command, runs a review skill, opens a PR, comments on the Task and moves it to In Review.
-5. **The Open Loop continues:** a new Review comment, a failed Check or a Follow-up comment (`ACTION: ...`) gives a Respawn in the same worktree. When the PR is approved, merged or closed, the Task is Done. You merge; no agent ever merges.
+5. **The Open Loop continues:** a new Review comment, a failed Check or a Follow-up comment (`ACTION: ...`) gives a Respawn in the same worktree. A comment counts only from a trusted author: you, or a user with write access to the repo. When the PR is approved, merged or closed, the Task is Done. You merge; no agent ever merges.
 
 The states, the Cycle and the invariants are in [`SPEC.md`](SPEC.md). The words are in [`GLOSSARY.md`](GLOSSARY.md).
 
@@ -68,7 +68,7 @@ The core needs only a Tracker. A Spec is the Task body, or a file in your projec
 
 ## Safety
 
-> **Warning:** the Orchestrator and the Workers run with nobody watching, in auto mode (an agent-side check of each action) or bypass mode (no checks). They can run commands, change files and use your logins without asking you. A wrong or hostile Spec, Task comment or web page can make them do harm. Use auto mode, on a machine or account that holds only what Open Loops needs. Use bypass mode only on a machine that is itself a sandbox.
+> **Warning:** the Orchestrator and the Workers run with nobody watching, in auto mode (an agent-side check of each action) or bypass mode (no checks). They can run commands, change files and use your logins without asking you. A wrong or hostile Spec, Task comment or web page can make them do harm. Only a comment from a trusted author (you, or a user with write access to the repo) can start a Worker or give it an instruction; other comments, also from bots, are skipped. A Worker can still read untrusted text, for example in an issue body or on a web page. Use auto mode, on a machine or account that holds only what Open Loops needs. Use bypass mode only on a machine that is itself a sandbox.
 
 What runs where: the Host, the Runtime and the Workspaces are on one machine. Nothing runs on a server of this project.
 

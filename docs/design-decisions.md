@@ -129,6 +129,9 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 **The Local branch Review System: the Task branch is the PR.** Review comments are Tracker comments with the Follow-up prefix; the Checks are the build and test command; Done is a merge into `main` or the Owner's move.
 *Why:* the full Open Loop must work on one machine with no hosting service, for a first try and for the test fixture.
 
+**Only a trusted author's comment can start or steer a Worker.**
+*Why:* a Follow-up or a Review comment starts a Worker that runs with the Owner's logins. On a public repo, anyone can comment. A trusted author is the Owner or a user with write access, the same line that GitHub draws for its Copilot agent. Bots are not trusted: a failed Check, not a bot's comment, is the signal for broken builds.
+
 **Follow-ups are comments with an agreed prefix (default `ACTION:`), and their fulfilment is the Orchestrator's judgment.**
 *Why:* the Owner can ask for more on a Task with results, without a new Task. A fixed rule (for example "any later comment fulfils it") would be brittle: a status comment is not a fulfilment. An agent can read the comments after the Follow-up and decide.
 

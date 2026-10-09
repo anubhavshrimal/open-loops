@@ -61,7 +61,7 @@ The outer loop of one Task: Ready, Working, In Review, feedback, Respawn, until 
 _Avoid_: pipeline, workflow
 
 **Follow-up**:
-A new instruction from the Owner on a Task that already has results, marked with an agreed prefix.
+A new instruction from a trusted author on a Task that already has results, marked with an agreed prefix.
 _Avoid_: action comment, continuation
 
 **AI disclosure**:
@@ -109,8 +109,12 @@ The reviewable code change a Worker opens. Covers GitHub pull requests, GitLab m
 _Avoid_: CR, MR, change request
 
 **Review comment**:
-A comment on a PR from anyone, including the Owner.
+A comment on a PR from anyone, including the Owner. Only a trusted author's Review comment is actionable.
 _Avoid_: feedback, CR comment
+
+**Trusted author**:
+The Owner, or a user with write access to the repo, as `tracker.md` and `review.md` say. Bots are not trusted authors.
+_Avoid_: allowed user, maintainer
 
 **Review round**:
 The work of one Respawn on Review comments or a failed Check: the fix, its publish, and a reply to each Review comment. `review.md` says whether a round adds new commits or amends the commit.

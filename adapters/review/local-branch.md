@@ -38,7 +38,8 @@ All git commands run in the project repo, `git -C <project repo> ...`.
   - `merged`: the commit SHA in the Worker's latest PR comment is in `main` (`git merge-base --is-ancestor <sha> main` exits 0).
   - `approved`: the Owner moved the Task to Done.
   - `closed`: the branch `ol-<slug>` no longer exists and was not merged.
-- **Read Review comments with ids:** the Task's Tracker comments that start with the Follow-up prefix (see `tracker.md`) and were posted after the latest PR comment. The id is the Tracker comment id. Here a Review comment and a Follow-up are the same comment: treat it as one signal.
+- **Read Review comments with ids:** the Task's Tracker comments that start with the Follow-up prefix (see `tracker.md`), have a trusted author, and were posted after the latest PR comment. The id is the Tracker comment id. Here a Review comment and a Follow-up are the same comment: treat it as one signal.
+- **Tell whether an author is trusted:** the same rule as `tracker.md` ("Tell whether an author is trusted").
 - **Read Checks:** the `Checks:` line in the Worker's latest Tracker comment. No `Checks:` line means pending.
 
 ## Triggers

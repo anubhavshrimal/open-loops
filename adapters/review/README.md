@@ -14,7 +14,8 @@ The Worker must be able to:
 The Orchestrator must be able to:
 
 - [ ] Read a PR's state: open, approved, merged, closed.
-- [ ] Read a PR's Review comments, each with an id.
+- [ ] Read a PR's Review comments, each with an id and its author.
+- [ ] Tell whether an author is trusted (the Owner, or a user with write access).
 - [ ] Read a PR's Checks.
 
 `review.md` also says:
@@ -46,6 +47,7 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 | Reply to a Review comment | Worker capabilities: "Reply to a Review comment" |
 | Read PR state | Orchestrator capabilities: "Read PR state" |
 | Read Review comments with ids | Orchestrator capabilities: "Read Review comments with ids" |
+| Tell whether an author is trusted | Orchestrator capabilities: "Tell whether an author is trusted" |
 | Read Checks | Orchestrator capabilities: "Read Checks" (Worker side: "Checks") |
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |
@@ -66,6 +68,7 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 | Reply to a Review comment | Worker capabilities: "Reply to a Review comment" |
 | Read PR state | Orchestrator capabilities: "Read PR state" |
 | Read Review comments with ids | Orchestrator capabilities: "Read Review comments with ids" |
+| Tell whether an author is trusted | Orchestrator capabilities: "Tell whether an author is trusted" |
 | Read Checks | Orchestrator capabilities: "Read Checks" (Worker side: "Checks") |
 | Open PRs as | "Open PRs as" line |
 | Remote | "Remote to push to" line |

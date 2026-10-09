@@ -49,7 +49,10 @@ for l in ready working blocked in-review; do gh label create "ol:$l" --force -R 
   `gh issue view <n> -R {{TRACKER_OWNER}}/{{TRACKER_REPO}} --json number,title,body,state,labels,url`
 - **Read a Task's comments:**
   `gh issue view <n> -R {{TRACKER_OWNER}}/{{TRACKER_REPO}} --json comments --jq '.comments[] | {id, author: .author.login, createdAt, body}'`
-  Comments come oldest first. The comment id is the `id` field.
+  Comments come oldest first. The comment id is the `id` field. The author is `author.login`.
+- **Tell whether an author is trusted:**
+  `gh api repos/{{TRACKER_OWNER}}/{{TRACKER_REPO}}/collaborators/<login>/permission --jq .permission`
+  `admin` or `write` → trusted. `read`, `none`, or an error (for example HTTP 403) → not trusted. Bots get `none`. Check each login once per Cycle.
 - **Read a Task's children:** the issue's sub-issues.
   `gh issue view <n> -R {{TRACKER_OWNER}}/{{TRACKER_REPO}} --json subIssues --jq '.subIssues.nodes[] | {number, title, state}'`
   A Task with one or more sub-issues is a parent Task. The parent of a child is in `--json parent` (`null` for a top-level Task).
@@ -70,7 +73,7 @@ for l in ready working blocked in-review; do gh label create "ol:$l" --force -R 
 
 ## Quirks
 
-- The Orchestrator and the Worker comment as the Owner's GitHub user. A Follow-up is found only by its prefix, never by its author. Agents never start a comment with the Follow-up prefix.
+- The Orchestrator and the Worker comment as the Owner's GitHub user. A Follow-up is found by its prefix and a trusted author (see "Tell whether an author is trusted"); the Owner's own comments are trusted. Agents never start a comment with the Follow-up prefix.
 - `gh` must know the JSON fields `subIssues` and `blockedBy` (`gh issue view --help` lists them). An older `gh` fails on them, and each Cycle is then a Tracker tool failure: update `gh`.
 - `gh issue list` returns 30 issues unless you pass `--limit`.
 - More than one `--label` means "has all of these labels". Run one query for each state.
