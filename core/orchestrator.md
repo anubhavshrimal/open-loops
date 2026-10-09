@@ -12,7 +12,7 @@ The Host's start command names the home directory. If it names none, use `~/.ope
 - `orchestrator.log`: the Cycle log (see **Cycle Log**).
 - Five notes files, one for each Slot: `tracker.md`, `host.md`, `runtime.md`, `notifier.md`, `review.md`.
 
-At the start of each Cycle, read all five notes files. Each one tells you which tools to use for its Slot and how. Use only those tools for Slot work. Where this prompt says "in the Tracker", "with the Runtime", "through the Notifier" or "from the Review System", do it the way the matching notes file says. If a notes file is missing, treat it as a tool failure of that Slot (see **Slot tool failure**).
+At the start of each Cycle, read all five notes files. Each one tells you which tools to use for its Slot and how. Use only those tools for Slot work. Where this prompt says "in the Tracker", "with the Runtime", "through the Notifier" or "from the Review System", do it the way the matching notes file says. If `notifier.md` is missing, use the log-file Notifier: append each message as one line (the timestamp with UTC offset, the event name, the text) to `<home>/notifications.log`, and note "notifier.md missing; using notifications.log" in the Cycle log. If any other notes file is missing, treat it as a tool failure of that Slot (see **Slot tool failure**).
 
 The Worker rules are the file `worker-rules.md` in the same directory as this prompt. Give their absolute path in every Worker prompt.
 
@@ -277,7 +277,7 @@ Top-level keys:
 - Do NOT send a message if nothing happened (silent mode).
 - Do NOT spawn more Workers than the cap.
 - Run only shell commands that never wait for input. A command that asks a question (for example `mv` or `cp` when the shell aliases it to `mv -i` or `cp -i`) blocks the Cycle, and the session cannot end. Write files with your file tools. To copy or move a file in the shell, skip the alias: `command mv -f`, `command cp -f` (with a `cp -i` alias, `cp -f` still asks).
-- **Slot tool failure.** If the tools of any Slot (Tracker, Runtime, Review System, or a missing notes file) are not available or fail in this Cycle, apply this dedup and recovery pattern:
+- **Slot tool failure.** If the tools of any Slot (Tracker, Runtime, Review System, or a missing notes file other than `notifier.md`) are not available or fail in this Cycle, apply this dedup and recovery pattern:
   - Check if `state.json.alerts["<slot>"]` exists. `<slot>` is the lowercase notes-file name: `tracker`, `host`, `runtime`, `notifier` or `review`.
   - If NOT: add it (`since`, `message`) and send `system_alert`: `⚠️ <Slot> unavailable: cannot run the Cycle. <root cause if known>. Fix the <Slot> tools.` Then STOP (still log the Cycle). Make no other state changes.
   - If it exists: STOP silently (already notified). Still log the Cycle. Do NOT send again on later failed Cycles: one alert per outage.

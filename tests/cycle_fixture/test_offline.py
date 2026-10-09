@@ -120,7 +120,7 @@ class SandboxTest(unittest.TestCase):
     def test_every_scenario_has_unique_worker_slugs(self):
         slugs = [slug for _, names in run_fixture.SCENARIOS.values() for slug in names]
         self.assertEqual(len(slugs), len(set(slugs)))
-        self.assertEqual(len(run_fixture.SCENARIOS), 11)
+        self.assertEqual(len(run_fixture.SCENARIOS), 12)
 
     def test_notifications_parse_event_names(self):
         self.sb.notifier_log.write_text("2026-10-06T22:31:04-07:00 spawned Picked up\n2026-10-06T22:32:04-07:00 done Done\n")

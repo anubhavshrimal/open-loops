@@ -222,7 +222,7 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 9. A Worker publishes only with the capabilities that `review.md` names. It never pushes or uploads in another way. The Orchestrator approves a push or upload that `review.md` names, and denies any other.
 10. A Worker never exits by itself. The Orchestrator stops it.
 11. A comment-triggered Respawn happens once for each new Review comment id. A failed Check is limited only by the live-Worker guard.
-12. A Slot tool failure (Tracker, Runtime, Review System, or a missing notes file) sends one `system_alert`, stops the Cycle with no other state change, and is logged. Recovery sends `system_recovered`. A Notifier failure never stops the Cycle.
+12. A Slot tool failure (Tracker, Runtime, Review System, or a missing notes file other than `notifier.md`) sends one `system_alert`, stops the Cycle with no other state change, and is logged. Recovery sends `system_recovered`. A Notifier failure never stops the Cycle. A missing `notifier.md` means the log-file Notifier at `<home>/notifications.log`.
 13. The Orchestrator prompt names no Slot product and never states the Cycle interval. Products and intervals live only in the notes files.
 14. The Orchestrator runs only shell commands that never wait for input.
 15. Every Cycle adds one entry to `orchestrator.log`.

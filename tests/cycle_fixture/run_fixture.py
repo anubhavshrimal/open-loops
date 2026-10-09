@@ -862,6 +862,34 @@ def scenario_no_remote(args):
     return s.finish()
 
 
+def scenario_no_notifier(args):
+    slug = "nonotify-file"
+    s = Scenario(12, "no-notifier: a missing notifier.md falls back to the log file", args, [slug])
+    sb, check = s.sb, s.check
+    (sb.home / "notifier.md").unlink()
+    data = sb.project / "data" / "nonotify.txt"
+    data.parent.mkdir()
+    data.write_text("Input data.\n")
+    git("add", "data/nonotify.txt", cwd=sb.project)
+    git("commit", "-q", "-m", "Add data/nonotify.txt", cwd=sb.project)
+    write_spec(sb, slug, "Copy data/nonotify.txt to copy.txt", "Copy `data/nonotify.txt` to a new file `copy.txt`.",
+               "`copy.txt` has the same content as `data/nonotify.txt`.")
+    write_task(sb, slug, "Copy data/nonotify.txt to copy.txt", "Blocked", comments=[
+        ("worker", f"The file {data} does not exist. BLOCKED — {data} is missing."),
+    ])
+    write_state(sb, {f"ol-{slug}": worker_record(sb, slug, "blocked", blocked_notified=True)})
+
+    s.cycle()
+    check("the Task is back in Ready (the blocker cleared)", task_state(sb, slug) == "Ready", task_state(sb, slug))
+    check("the unblocked message is in <home>/notifications.log", "unblocked" in events(sb), events(sb))
+    check("no system_alert", "system_alert" not in events(sb), events(sb))
+    check("no alert in state.json", not read_state(sb).get("alerts"), read_state(sb).get("alerts"))
+    log = (sb.home / "orchestrator.log").read_text()
+    check("the Cycle log notes the missing notifier.md", "notifier.md" in log, log[-300:])
+    s.state_valid()
+    return s.finish()
+
+
 # name -> (scenario function, the slugs of the Workers it can spawn)
 SCENARIOS = {
     "build": (scenario_build, ["hello-file"]),
@@ -875,6 +903,7 @@ SCENARIOS = {
     "tool-failure": (scenario_tool_failure, ["alert-file"]),
     "crash": (scenario_crash, ["crash-none", "crash-done"]),
     "no-remote": (scenario_no_remote, ["noremote-file"]),
+    "no-notifier": (scenario_no_notifier, ["nonotify-file"]),
 }
 
 

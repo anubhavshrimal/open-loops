@@ -27,6 +27,7 @@ Each Cycle runs the command in the "How a Cycle starts" block of the example `ho
 
 10. **`crash`: an exited Worker.** Two Tasks are Working with `working` records, and their Workers are gone from the Runtime. `crash-none` left nothing: no comment, no commit, no notes. `crash-done` left a commit, `implementation-notes.html` and a PR comment. After one Cycle: `crash-none` is Blocked with a `blocked` record, `blocked_notified`, and one `blocked` line that says "exited without a result"; `crash-done` is In Review with an `in_review` record and an `in_review` line. No `done` line, and no Worker is spawned.
 11. **`no-remote`: the Local branch path in a repo with no remote.** The project repo has no `origin`. A Ready Build Task `noremote-file` reaches In Review as in scenario 1: a Tracker comment names the branch and has a `Checks:` line, the branch has a commit that is not in `main`, the Worker is closed, and the repo still has no remote.
+12. **`no-notifier`: a missing `notifier.md`.** The home directory has no `notifier.md`. `nonotify-file` is Blocked, the Owner was told, and the blocker has cleared. After one Cycle: the Task is back in Ready, the `unblocked` line is in `<home>/notifications.log`, there is no `system_alert` and no alert in `state.json`, and the Cycle log notes the missing `notifier.md`.
 
 Scenarios 3, 5, 6, 7, 8 and 9 each check at least one Cycle where nothing changed: the Notifier log must not grow.
 
@@ -35,7 +36,7 @@ Scenarios 3, 5, 6, 7, 8 and 9 each check at least one Cycle where nothing change
 Needs `git`, `tmux`, `timeout`, Python 3 (standard library only) and `claude` (logged in). The fixture uses a real agent and costs tokens, so run it on demand, not on each commit. The Workers run on your default tmux server (`tmux ls` shows them). If no server runs, the fixture starts one with a helper session `openloops-fixture-server` and stops that session at the end. Start the fixture from a normal shell: a tmux server that a sandboxed agent shell starts passes that sandbox to every Worker.
 
 ```sh
-python3 tests/cycle_fixture/run_fixture.py                         # all 11 scenarios
+python3 tests/cycle_fixture/run_fixture.py                         # all 12 scenarios
 python3 tests/cycle_fixture/run_fixture.py --scenario merge        # one scenario (repeat the option for more)
 ```
 
