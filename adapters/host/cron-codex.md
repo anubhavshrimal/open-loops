@@ -27,10 +27,10 @@ cd {{HOME_DIR}} && timeout 25m codex exec --cd {{HOME_DIR}} --skip-git-repo-chec
 
 `--skip-git-repo-check` is needed because the home directory is not a git repo.
 
-Crontab line (`crontab -e`; cron has a short `PATH`, so set it to include `codex`, `git` and the Runtime's CLI):
+Crontab line (`crontab -e`; cron has a short `PATH`, so `{{CRON_PATH}}` is the real directories of `codex`, `git`, `gh` and the Runtime's CLI, then `/usr/bin:/bin`):
 
 ```
-PATH=/usr/local/bin:/usr/bin:/bin
+PATH={{CRON_PATH}}
 */30 * * * * cd {{HOME_DIR}} && timeout 25m codex exec --cd {{HOME_DIR}} --skip-git-repo-check --model {{ORCHESTRATOR_MODEL}} -c model_reasoning_effort={{ORCHESTRATOR_EFFORT}} {{CODEX_PERMISSION_FLAGS}} "Run one Open Loops Cycle. Follow {{CORE_DIR}}/orchestrator.md. Home directory: {{HOME_DIR}}." >> {{HOME_DIR}}/host.log 2>&1
 ```
 

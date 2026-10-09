@@ -157,6 +157,7 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runti
         "WORKER_MODEL": worker_model,
         "ORCHESTRATOR_MODEL": orchestrator_model,
         "PERMISSION_MODE": permission_mode,
+        "CRON_PATH": os.environ.get("PATH", "/usr/bin:/bin"),
         "PROJECT_REPO": str(sb.project),
         "BUILD_TEST_COMMAND": "sh check.sh",
         "EXTRA_DIRS": f"--add-dir {sb.tracker} --add-dir {sb.home} --add-dir {sb.specs}",
