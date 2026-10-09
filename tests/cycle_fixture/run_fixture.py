@@ -805,6 +805,36 @@ def scenario_tool_failure(args):
     return s.finish()
 
 
+def scenario_crash(args):
+    none, done = "crash-none", "crash-done"
+    s = Scenario(10, "crash: an exited Worker goes to Blocked with no result, to In Review with one", args, [none, done])
+    sb, check = s.sb, s.check
+    # Both Workers were Working and are now gone from the Runtime (crashed, or the machine restarted).
+    write_spec(sb, none, "Add none.txt", "Add a file `none.txt` with one line: `None.`", "`none.txt` has one line, `None.`")
+    git("worktree", "add", "-q", "-b", f"ol-{none}", str(sb.worktree(none)), "main", cwd=sb.project)
+    write_task(sb, none, "Add none.txt", "Working")
+    write_spec(sb, done, "Add done.txt", "Add a file `done.txt` with one line: `Done.`", "`done.txt` has one line, `Done.`")
+    sha = make_task_branch(sb, done, "done.txt", "Done.")
+    write_task(sb, done, "Add done.txt", "Working", comments=[("worker", pr_comment(done, sha, "Added done.txt."))])
+    write_state(sb, {f"ol-{none}": worker_record(sb, none, "working"), f"ol-{done}": worker_record(sb, done, "working")})
+
+    s.cycle()
+    log = sb.notifier_log.read_text() if sb.notifier_log.exists() else ""
+    check("the Task with no result is Blocked", task_state(sb, none) == "Blocked", task_state(sb, none))
+    record = read_state(sb).get(f"ol-{none}", {})
+    check("its record is blocked, with blocked_notified", (record.get("status"), record.get("blocked_notified")) == ("blocked", True), record)
+    blocked = [line for line in log.splitlines() if " blocked " in line]
+    check("one blocked line that says the Worker exited without a result",
+          len(blocked) == 1 and "exited without a result" in blocked[0], blocked)
+    check("the Task with a result is In Review", task_state(sb, done) == "In Review", task_state(sb, done))
+    check("its record is in_review", read_state(sb).get(f"ol-{done}", {}).get("status") == "in_review", read_state(sb).get(f"ol-{done}"))
+    check("Notifier log has an in_review line", "in_review" in events(sb), events(sb))
+    check("no done line", "done" not in events(sb), events(sb))
+    check("no Worker was spawned", not set(s.workers) & set(s.live()), s.live())
+    s.state_valid()
+    return s.finish()
+
+
 # name -> (scenario function, the slugs of the Workers it can spawn)
 SCENARIOS = {
     "build": (scenario_build, ["hello-file"]),
@@ -816,6 +846,7 @@ SCENARIOS = {
     "backlog": (scenario_backlog, ["backlog-file"]),
     "blocked": (scenario_blocked, ["blocked-file"]),
     "tool-failure": (scenario_tool_failure, ["alert-file"]),
+    "crash": (scenario_crash, ["crash-none", "crash-done"]),
 }
 
 

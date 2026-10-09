@@ -35,7 +35,9 @@ The Tracker has six states: Backlog, Ready, Working, Blocked, In Review, Done. `
 ### 1. Monitor Live Workers
 List the Workers with the Runtime and keep the ones whose name starts with `ol-`. Do this BEFORE you read Ready Tasks, so that completions in this Cycle clear dependency gates in this same Cycle.
 
-`runtime.md` tells you how to get each Worker's status. The core statuses are `working`, `idle`, `Input Request` and `exited`. An `ol-<slug>` whose `state.json` record has `status: "working"` but is ABSENT from the Runtime's list has `exited` (it finished and quit, or crashed). Treat it as completed and handle completion below, with its last-known state and the `<workspace>/.openloops/<slug>/implementation-notes.html` artifact.
+`runtime.md` tells you how to get each Worker's status. The core statuses are `working`, `idle`, `Input Request` and `exited`. An `ol-<slug>` whose `state.json` record has `status: "working"` but is ABSENT from the Runtime's list has `exited` (it finished and quit, or crashed). Do not assume completion. Read the Task's comments in the Tracker and the Worker's state path `<workspace>/.openloops/<slug>/` (`implementation-notes.html`, a report, or other output that the Spec asks for), and judge whether the Worker left a result for the Owner to look at.
+  - A result → handle completion below, without the gap-fill prompt (the Worker is gone and cannot answer it).
+  - No result → handle it as a Worker that reported BLOCKED (below), with the reason "Worker exited without a result".
 
 For each `ol-<slug>` Worker, branch on its status:
   - **`working`:** the Worker is actively processing → skip. Never wait on it. A long Task must not hold up the Cycle.
@@ -55,8 +57,8 @@ For each `ol-<slug>` Worker, branch on its status:
   - `idle` → the Worker finished or waits on nothing more → exit the loop and go to completion handling.
   - Still `working` after the wait → the Worker went back to a longer step → exit the loop and skip; the next Cycle checks again. This guard keeps the Orchestrator from blocking on long work.
   Cap the loop at about 10 iterations per Cycle as a runaway backstop. If the Worker is still not settled, leave it and move on.
-- If `idle` or `exited` (completed successfully):
-  - **Gap-fill re-prompt:** if this Task's Spec has dependents, and `state.json["ol-<slug>"].gap_fill_done` is not `true`, do not close the Worker yet. Send it one more prompt with the Runtime:
+- If `idle`, or `exited` with a result (completed successfully):
+  - **Gap-fill re-prompt:** if the Worker is `idle`, this Task's Spec has dependents, and `state.json["ol-<slug>"].gap_fill_done` is not `true`, do not close the Worker yet. Send it one more prompt with the Runtime:
     ```
     Check if what you just did resolves any {TBD: ...} gaps in these dependent Specs: <dependent spec path(s)>. Edit them directly if so, and set spec_status: ready where fully resolved. Report what you changed, or say nothing to change.
     ```
@@ -68,7 +70,7 @@ For each `ol-<slug>` Worker, branch on its status:
     - Only put it in Done if there is nothing left for a human to review (rare at this step; Step 5 normally moves Tasks to Done after approval). This check applies ONLY to the Worker you are closing now. Never re-evaluate or move a Task that is already Done at the start of the Cycle; that state is final until the Owner moves it.
   - Send `in_review` (or `done`): "✅ Done: **<task name>** (`ol-<slug>`). PR: <PR reference if any>. Notes: <workspace>/.openloops/<slug>/implementation-notes.html"
   - In `state.json`, set the record's `status` to `in_review` (or remove the record if the Task is Done) and remove its Runtime ids.
-- If the Worker reported BLOCKED (its output or its Tracker comment says it hit a blocker that only the Owner can clear):
+- If the Worker reported BLOCKED (its output or its Tracker comment says it hit a blocker that only the Owner can clear), or it `exited` with no result:
   - Stop the Worker with the Runtime.
   - Send `blocked`: "🚧 Blocked: <task name>. Reason: <from output>. Notes: <workspace>/.openloops/<slug>/implementation-notes.html"
   - Verify that the Worker moved the Task to Blocked. If not, move it.

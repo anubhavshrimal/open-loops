@@ -50,7 +50,7 @@ stateDiagram-v2
     Backlog --> Ready: Owner
     Ready --> Working: Spawn (not Gated, under the cap)
     Working --> InReview: Worker opens a PR or has a result
-    Working --> Blocked: Worker gives up
+    Working --> Blocked: Worker gives up, or exits with no result
     Working --> Done: nothing to review (rare)
     InReview --> Working: Respawn (Review comment, failed Check, Follow-up)
     InReview --> Done: approved, merged, closed, or Follow-up fulfilled
@@ -64,7 +64,7 @@ The Owner can move any Task to any state, including back to Backlog. The Orchest
 
 A Cycle is one pass of the Orchestrator over the Tracker. The Host starts each Cycle as a new session. The steps, in order:
 
-1. **Monitor live Workers.** List the `ol-` Workers with the Runtime and get each status: `working` (skip), `idle` or `exited` (completion), `Input Request` (answer it, or notify the Owner). On completion: send the gap-fill prompt once if the Spec has dependents, stop the Worker, verify the Task state in the Tracker, update `state.json`, notify.
+1. **Monitor live Workers.** List the `ol-` Workers with the Runtime and get each status: `working` (skip), `idle` (completion), `exited` (completion if the Worker left a result for the Owner in the Tracker or its state path, judged by the Orchestrator; else Blocked with "Worker exited without a result"), `Input Request` (answer it, or notify the Owner). On completion: send the gap-fill prompt once if the Spec has dependents, stop the Worker, verify the Task state in the Tracker, update `state.json`, notify.
 2. **Read Ready Tasks.** Find the Ready Tasks. Only leaf Tasks spawn. Look for a pending Follow-up, find the Spec, and apply the dependency gate.
 3. **Spawn Workers.** Most dependents first, up to the cap. Make or reuse the Workspace, make the state path, start the Worker with its first prompt, move the Task to Working, record it, notify.
 4. **Cap check.** At the cap, spawn nothing more and log which Tasks wait.

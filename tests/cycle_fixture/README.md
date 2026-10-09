@@ -25,6 +25,8 @@ Each Cycle runs the command in the "How a Cycle starts" block of the example `ho
 8. **`blocked`: a Blocked Task goes back to Ready.** `blocked-file` is Blocked on a missing file and the Owner was already told (`blocked_notified`). Cycle 1 sends nothing and the Task stays Blocked. The Owner adds the file to `main`; Cycle 2 moves the Task back to Ready, sends `unblocked`, and keeps the record with `blocked_notified` cleared.
 9. **`tool-failure`: a Tracker tool failure.** The Tracker directory (with one Ready Task) is unreadable (`chmod 000`). Cycle 1 sends one `system_alert`, writes `alerts.tracker` and makes no other change. Cycle 2 sends nothing. The directory is made readable; Cycle 3 sends `system_recovered`, removes the alert and goes on with the Cycle (the Ready Task is spawned).
 
+10. **`crash`: an exited Worker.** Two Tasks are Working with `working` records, and their Workers are gone from the Runtime. `crash-none` left nothing: no comment, no commit, no notes. `crash-done` left a commit, `implementation-notes.html` and a PR comment. After one Cycle: `crash-none` is Blocked with a `blocked` record, `blocked_notified`, and one `blocked` line that says "exited without a result"; `crash-done` is In Review with an `in_review` record and an `in_review` line. No `done` line, and no Worker is spawned.
+
 Scenarios 3, 6, 7, 8 and 9 each check at least one Cycle where nothing changed: the Notifier log must not grow.
 
 ## Run
@@ -32,7 +34,7 @@ Scenarios 3, 6, 7, 8 and 9 each check at least one Cycle where nothing changed: 
 Needs `git`, `tmux`, `timeout`, Python 3 (standard library only) and `claude` (logged in). The fixture uses a real agent and costs tokens, so run it on demand, not on each commit. The Workers run on your default tmux server (`tmux ls` shows them). If no server runs, the fixture starts one with a helper session `openloops-fixture-server` and stops that session at the end. Start the fixture from a normal shell: a tmux server that a sandboxed agent shell starts passes that sandbox to every Worker.
 
 ```sh
-python3 tests/cycle_fixture/run_fixture.py                         # all 9 scenarios
+python3 tests/cycle_fixture/run_fixture.py                         # all 10 scenarios
 python3 tests/cycle_fixture/run_fixture.py --scenario merge        # one scenario (repeat the option for more)
 ```
 
