@@ -4,7 +4,7 @@ Runs real Open Loops Cycles against sandboxes with the local fallbacks, then che
 
 Each scenario builds its own sandbox, a new temp directory with:
 
-- a project repo and its local bare `origin` (made with `git clone --bare`, so the fixture runs no `git push`),
+- a project repo and its local bare `origin` (made with `git clone --bare`, so the fixture runs no `git push`); scenario 11 has no `origin`,
 - a Markdown Tracker directory with the scenario's Tasks,
 - a Spec directory with their Specs: the samples from `examples/` (scenarios 1 and 2), or small Build Specs made from `fixtures/build.spec.md`,
 - a home directory with the five example notes files from `adapters/`, filled in for the sandbox: Markdown Tracker, cron + `claude -p` Host, tmux Runtime (on the default tmux server), log-file Notifier, Local branch Review System. As setup does, the fixture also copies `core/agents/*.md` to `<home>/.claude/agents/`.
@@ -26,6 +26,7 @@ Each Cycle runs the command in the "How a Cycle starts" block of the example `ho
 9. **`tool-failure`: a Tracker tool failure.** The Tracker directory (with one Ready Task) is unreadable (`chmod 000`). Cycle 1 sends one `system_alert`, writes `alerts.tracker` and makes no other change. Cycle 2 sends nothing. The directory is made readable; Cycle 3 sends `system_recovered`, removes the alert and goes on with the Cycle (the Ready Task is spawned).
 
 10. **`crash`: an exited Worker.** Two Tasks are Working with `working` records, and their Workers are gone from the Runtime. `crash-none` left nothing: no comment, no commit, no notes. `crash-done` left a commit, `implementation-notes.html` and a PR comment. After one Cycle: `crash-none` is Blocked with a `blocked` record, `blocked_notified`, and one `blocked` line that says "exited without a result"; `crash-done` is In Review with an `in_review` record and an `in_review` line. No `done` line, and no Worker is spawned.
+11. **`no-remote`: the Local branch path in a repo with no remote.** The project repo has no `origin`. A Ready Build Task `noremote-file` reaches In Review as in scenario 1: a Tracker comment names the branch and has a `Checks:` line, the branch has a commit that is not in `main`, the Worker is closed, and the repo still has no remote.
 
 Scenarios 3, 5, 6, 7, 8 and 9 each check at least one Cycle where nothing changed: the Notifier log must not grow.
 
@@ -34,7 +35,7 @@ Scenarios 3, 5, 6, 7, 8 and 9 each check at least one Cycle where nothing change
 Needs `git`, `tmux`, `timeout`, Python 3 (standard library only) and `claude` (logged in). The fixture uses a real agent and costs tokens, so run it on demand, not on each commit. The Workers run on your default tmux server (`tmux ls` shows them). If no server runs, the fixture starts one with a helper session `openloops-fixture-server` and stops that session at the end. Start the fixture from a normal shell: a tmux server that a sandboxed agent shell starts passes that sandbox to every Worker.
 
 ```sh
-python3 tests/cycle_fixture/run_fixture.py                         # all 10 scenarios
+python3 tests/cycle_fixture/run_fixture.py                         # all 11 scenarios
 python3 tests/cycle_fixture/run_fixture.py --scenario merge        # one scenario (repeat the option for more)
 ```
 

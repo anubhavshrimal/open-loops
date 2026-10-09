@@ -2,7 +2,7 @@
 
 Example notes file for the Review System Slot. Copy it to `<home>/review.md` and replace each `{{...}}` placeholder.
 
-Review System: Local branch. There is no hosting service. The "PR" is the Task branch `ol-<slug>` in the project repo.
+Review System: Local branch. There is no hosting service, and the project repo needs no remote. The "PR" is the Task branch `ol-<slug>` in the project repo.
 
 Remote to push to: none. The Local branch never pushes: the Workspace is a git worktree of the project repo, so every commit on `ol-<slug>` is already in the project repo. Never run `git push`.
 

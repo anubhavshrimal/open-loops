@@ -143,10 +143,13 @@ For each eligible Task (at most the cap of live `ol-` Workers in total, existing
       # The Worker appends to its prior implementation-notes.html on Respawn.
       :
   else
-      # Fresh creation. Fetch the start branch and resolve the fork point.
-      git -C <workspace> fetch origin <branch>
+      # Fresh creation. Resolve the fork point. A project repo with no origin
+      # remote (Local branch Review System) forks from its local branch.
       START_POINT=<branch>
-      git -C <workspace> rev-parse --verify <branch> >/dev/null 2>&1 || START_POINT=origin/<branch>
+      if git -C <workspace> remote get-url origin >/dev/null 2>&1; then
+          git -C <workspace> fetch origin <branch>
+          git -C <workspace> rev-parse --verify <branch> >/dev/null 2>&1 || START_POINT=origin/<branch>
+      fi
 
       # Create the worktree on a NEW branch ol-<slug> forked from START_POINT.
       # The new branch sidesteps the "same branch checked out twice" rule, so the
@@ -154,7 +157,9 @@ For each eligible Task (at most the cap of live `ol-` Workers in total, existing
       git -C <workspace> worktree add -b ol-<slug> "$WT_PATH" "$START_POINT"
 
       # Set the upstream so that the Worker's review step diffs against <branch>.
-      git -C "$WT_PATH" branch --set-upstream-to=origin/<branch>
+      if git -C <workspace> remote get-url origin >/dev/null 2>&1; then
+          git -C "$WT_PATH" branch --set-upstream-to=origin/<branch>
+      fi
   fi
   ```
 

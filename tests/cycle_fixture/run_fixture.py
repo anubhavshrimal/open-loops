@@ -113,9 +113,10 @@ def now():
 
 
 def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="tmux", project_files=(CHECK_SH,),
-                  home=None, notes=True):
+                  home=None, notes=True, remote=True):
     """A sandbox with the project repo, its origin, the notes files and the core agents, and no Tasks yet.
-    notes=False leaves the home directory empty, for setup to fill (the setup dry run)."""
+    notes=False leaves the home directory empty, for setup to fill (the setup dry run).
+    remote=False makes a project repo with no remote and no origin."""
     home = home or root / "home"
     sb = Sandbox(
         root=root,
@@ -139,10 +140,11 @@ def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runti
         shutil.copy(path, sb.project / path.name)
     git("add", ".", cwd=sb.project)
     git("commit", "-q", "-m", "Initial commit", cwd=sb.project)
-    git("clone", "-q", "--bare", str(sb.project), str(sb.origin))
-    git("remote", "add", "origin", str(sb.origin), cwd=sb.project)
-    git("fetch", "-q", "origin", cwd=sb.project)
-    git("branch", "-q", "--set-upstream-to=origin/main", "main", cwd=sb.project)
+    if remote:
+        git("clone", "-q", "--bare", str(sb.project), str(sb.origin))
+        git("remote", "add", "origin", str(sb.origin), cwd=sb.project)
+        git("fetch", "-q", "origin", cwd=sb.project)
+        git("branch", "-q", "--set-upstream-to=origin/main", "main", cwd=sb.project)
 
     sb.values.update({
         "TRACKER_DIR": str(sb.tracker),
@@ -464,8 +466,9 @@ def wait_for(predicate, seconds, poll=10, observe=None):
 class Scenario:
     """One scenario in its own sandbox: its Cycle command, its Worker names and its checks."""
 
-    def __init__(self, number, name, args, slugs, project_files=(CHECK_SH,), sb=None):
-        """sb: run in this sandbox (its notes files already written) instead of a new one."""
+    def __init__(self, number, name, args, slugs, project_files=(CHECK_SH,), sb=None, remote=True):
+        """sb: run in this sandbox (its notes files already written) instead of a new one.
+        remote=False: the project repo has no origin remote."""
         self.number = number
         self.args = args
         self.runtime = args.runtime
@@ -473,7 +476,7 @@ class Scenario:
         if sb is None:
             root = Path(tempfile.mkdtemp(prefix=f"openloops-fixture-s{number}-"))
             sb = build_sandbox(root, args.orchestrator_model, args.worker_model, args.permission_mode,
-                               self.runtime, project_files)
+                               self.runtime, project_files, remote=remote)
         self.sb = sb
         self.command = cycle_command((self.sb.home / "host.md").read_text())
         self.checks = Checks(f"scenario {number}")
@@ -843,6 +846,21 @@ def scenario_crash(args):
     return s.finish()
 
 
+def scenario_no_remote(args):
+    slug = "noremote-file"
+    s = Scenario(11, "no-remote: the Local branch path works in a repo with no origin", args, [slug], remote=False)
+    sb, check = s.sb, s.check
+    check("the project repo has no remote", not git("remote", cwd=sb.project).stdout.strip())
+    write_spec(sb, slug, "Add noremote.txt", "Add a file `noremote.txt` with one line: `No remote.`",
+               "`noremote.txt` has one line, `No remote.`")
+    write_task(sb, slug, "Add noremote.txt", "Ready")
+    reach_in_review(s, slug)
+    comments = task_comments(sb, slug)
+    check("a Tracker comment has a Checks: line", any("Checks:" in c for c in comments), f"{len(comments)} comments")
+    check("the project repo still has no remote", not git("remote", cwd=sb.project).stdout.strip())
+    return s.finish()
+
+
 # name -> (scenario function, the slugs of the Workers it can spawn)
 SCENARIOS = {
     "build": (scenario_build, ["hello-file"]),
@@ -855,6 +873,7 @@ SCENARIOS = {
     "blocked": (scenario_blocked, ["blocked-file"]),
     "tool-failure": (scenario_tool_failure, ["alert-file"]),
     "crash": (scenario_crash, ["crash-none", "crash-done"]),
+    "no-remote": (scenario_no_remote, ["noremote-file"]),
 }
 
 

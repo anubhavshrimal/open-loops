@@ -29,7 +29,8 @@ In the commands below, `<workspace>` is the project repo (the Spec's `workspace:
      ```sh
      herdr worktree create --cwd <workspace> --branch ol-<slug> --base "$START_POINT" \
        --path <workspace>/.openloops/worktrees/<slug> --label ol-<slug> --no-focus
-     git -C <workspace>/.openloops/worktrees/<slug> branch --set-upstream-to=origin/<branch>
+     git -C <workspace> remote get-url origin >/dev/null 2>&1 && \
+       git -C <workspace>/.openloops/worktrees/<slug> branch --set-upstream-to=origin/<branch>
      ```
 
    - Worktree mode, the Workspace exists (a Respawn): reuse it. Open a new Herdr workspace in it:

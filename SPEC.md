@@ -84,7 +84,7 @@ Step 1 comes before step 2, so that a completion in this Cycle clears a dependen
 
 ## 6. Workspaces and Worker state
 
-- **Worktree mode** (the Spec has a `branch:` and the target is a git repo): the Workspace is a git worktree at `<repo>/.openloops/worktrees/<slug>`, on a new branch `ol-<slug>` forked from `branch`. A Runtime that makes worktrees itself (Herdr) says so in `runtime.md`.
+- **Worktree mode** (the Spec has a `branch:` and the target is a git repo): the Workspace is a git worktree at `<repo>/.openloops/worktrees/<slug>`, on a new branch `ol-<slug>` forked from `branch` (from `origin/<branch>` when the local branch is missing; a repo with no `origin` remote forks from its local branch). A Runtime that makes worktrees itself (Herdr) says so in `runtime.md`.
 - **Directory mode** (no `branch:`, or not a git repo): the Workspace is the directory itself.
 - Workspaces are durable. They are reused on every Respawn and never deleted or force-overwritten by Open Loops.
 - The Worker's state path is `<repo>/.openloops/<slug>/`, outside the worktree, and `.openloops/` is gitignored. It holds `implementation-notes.html` (every Spec), `experiments-comparator.html` (when the Worker compares variants), and the Exploration files (`results.tsv` and the findings report).

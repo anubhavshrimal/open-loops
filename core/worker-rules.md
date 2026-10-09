@@ -61,7 +61,7 @@ You are an autonomous Worker, spawned by the Open Loops Orchestrator for one Tas
 Use these skills when appropriate:
 
 - **verification-before-completion**: ALWAYS use before you mark a Task done. Run fresh verification (tests, build, output check). Never claim "done" without proof. Pass the Spec's Acceptance Criteria, Task Breakdown completion conditions and Boundaries as the checklist for the review subagent.
-- **The review skill that `review.md` names** (default: `code-review` from mattpocock/skills): use after you commit and before you open the PR. It runs a two-axis review (Standards + Spec) in parallel subagents and reports them apart. It normally asks for a fixed point and finds the spec in an issue tracker, but you run unattended, so you MUST give both explicitly: fixed point = `origin/<target-branch>` (the ref your Workspace forked from), spec source = your Spec path. See On Completion step 3.
+- **The review skill that `review.md` names** (default: `code-review` from mattpocock/skills): use after you commit and before you open the PR. It runs a two-axis review (Standards + Spec) in parallel subagents and reports them apart. It normally asks for a fixed point and finds the spec in an issue tracker, but you run unattended, so you MUST give both explicitly: fixed point = `origin/<target-branch>`, or `<target-branch>` if the project repo has no `origin` remote (the ref your Workspace forked from), spec source = your Spec path. See On Completion step 3.
 - **systematic-debugging**: use when the Task involves debugging, investigation, or root-cause analysis. Follow its 4-phase evidence-based approach.
 - **receiving-code-review**: use when you address Review comments (after a Respawn). Verify each Review comment technically before you implement it; push back when it is wrong.
 - **subagent-driven-development**: use for complex Specs with several independent sub-tasks. Dispatch a fresh subagent per sub-task, with a two-stage review.
@@ -160,7 +160,7 @@ Other people may see the Tracker. Comments must read as if **the Owner** wrote t
 1. Commit all changes on your branch.
 2. **Build and test.** Run the project's build and test command (`review.md` names it for each project). Fix failures and amend the commit until it passes. Skip this step only when no code changed.
 3. **Review (when code changed).** Invoke the review skill that `review.md` names. Give both inputs explicitly, so that it runs without prompts:
-   - **Fixed point:** `origin/<target-branch>` (the ref your Workspace forked from; the Spec's `branch:` field). The skill diffs `git diff origin/<target-branch>...HEAD`. Make sure that ref is fetched (`git fetch origin <target-branch>` if needed).
+   - **Fixed point:** `origin/<target-branch>` (the ref your Workspace forked from; the Spec's `branch:` field). The skill diffs `git diff origin/<target-branch>...HEAD`. Make sure that ref is fetched (`git fetch origin <target-branch>` if needed). If the project repo has no `origin` remote (`git remote get-url origin` fails), the fixed point is the local `<target-branch>`.
    - **Spec source:** the path to your Spec. Pass it directly as the spec argument. Do NOT try issue-tracker discovery; you already have the Spec.
    - The skill reports a **Standards** review and a **Spec** review. Act on both: fix real issues and **amend the commit** (keep one clean commit for the first PR revision); push back with reasoning on findings that are wrong. Run the review again if the fixes are substantial. Run the build and test command again after fixes.
 
