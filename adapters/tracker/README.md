@@ -13,6 +13,7 @@ A Tracker must let the Orchestrator and the Worker:
 - [ ] Read a Task's dependencies (and its dependents).
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
+- [ ] Create a child Task under a Task.
 
 `tracker.md` holds the tools for each capability, the map from the six core states (Backlog, Ready, Working, Blocked, In Review, Done) to the native names, the IDs, the Follow-up prefix, the AI disclosure line (`AI disclosure: off | <text>`, default off), and the quirks of the tool.
 
@@ -41,6 +42,7 @@ Rules that the core applies to every Tracker:
 | Read a Task's dependencies and dependents | Capabilities: "Read a Task's dependencies" |
 | Post a comment | Capabilities: "Post a comment" |
 | Change a Task's state | Capabilities: "Change state" |
+| Create a child Task | Capabilities: "Create a child Task" |
 | Map of the six states | "States" table |
 | Follow-up prefix | "Follow-up prefix" line |
 | AI disclosure | "AI disclosure" line |
@@ -57,6 +59,7 @@ Rules that the core applies to every Tracker:
 | Read a Task's dependencies and dependents | Capabilities: "Read a Task's dependencies" |
 | Post a comment | Capabilities: "Post a comment" |
 | Change a Task's state | Capabilities: "Change state" |
+| Create a child Task | Capabilities: "Create a child Task" |
 | Map of the six states | "States" table |
 | Follow-up prefix | "Follow-up prefix" line |
 | AI disclosure | "AI disclosure" line |

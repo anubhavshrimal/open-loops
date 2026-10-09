@@ -63,9 +63,10 @@ This Tracker has no native close: only the state `Done` resolves a dependency.
 - **Read a Task's dependencies:** the ids in its `depends_on:`. Its dependents are the Tasks whose `depends_on:` contains its id.
 - **Post a comment:** append a new `### <next-id> | <timestamp> | <author>` heading and the text at the end of the file.
 - **Change state:** edit the `state:` line in the frontmatter. Change nothing else in the frontmatter.
+- **Create a child Task:** write a new file `{{TRACKER_DIR}}/<task-id>.md` with a new, unused id, `parent: <parent id>`, the state that you choose, the body, and an empty `## Comments` section (the format above).
 
 ## Quirks
 
-- Edit only the file of the Task you act on. Never rename or delete a Task file.
+- Edit only the file of the Task you act on, or the new file of a child Task that you create. Never rename or delete a Task file.
 - Keep the frontmatter valid YAML: one key per line, strings with spaces in plain form (no quotes needed).
 - If the Task directory does not exist or cannot be read, that is a Tracker tool failure (see the core rule on Slot tool failure).

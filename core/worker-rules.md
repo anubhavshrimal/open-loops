@@ -132,7 +132,7 @@ Per-row spine: hypothesis → what was tried → metric outcome → root-cause a
 - Publish your branch and open a PR, as `review.md` says
 - Install dependencies (in your Workspace only)
 - Update related context pages (with a git commit, if they are in git)
-- Create child Tasks under your Task in the Tracker
+- Create child Tasks under your Task in the Tracker, with the "Create a child Task" capability of `tracker.md`
 - Read any related context page
 - Search the web for context when it helps. You are not limited to the Spec. If a Task needs background you do not have (an unfamiliar API, an error message, a library, a design pattern, a service), gather it before you guess. This is a permission, not a requirement: use it when more context makes the work better, and skip it when you already know enough. Dispatch a subagent, so that the raw search results stay out of your main context.
 

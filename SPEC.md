@@ -113,6 +113,7 @@ The Tracker stores Tasks and their states. A Tracker must let the Orchestrator a
 - [ ] Read a Task's dependencies (and its dependents).
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
+- [ ] Create a child Task under a Task.
 
 `tracker.md` holds the tools for each capability, the map from the six states to the native names, the IDs, the Follow-up prefix (default `ACTION:`), the AI disclosure line (default off), and the quirks of the tool. Rules for every Tracker: the Spec location and spawn fields of section 5; only leaf Tasks spawn; a dependency is resolved only when the upstream Task is Done (`tracker.md` says if a closed Task counts as Done); whether a Follow-up is fulfilled is the Orchestrator's judgment. Examples: [GitHub Issues](adapters/tracker/github-issues.md) (default), [Markdown files](adapters/tracker/markdown.md) (fallback).
 

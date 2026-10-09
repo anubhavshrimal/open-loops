@@ -64,6 +64,9 @@ for l in ready working blocked in-review; do gh label create "ol:$l" -R {{TRACKE
   Use the labels that the issue has now: `--remove-label` takes its current state label, and `--add-label` the new one.
   To Done (from any state): `gh issue edit <n> -R {{TRACKER_OWNER}}/{{TRACKER_REPO}} --remove-label <current state label>`, then `gh issue close <n> -R {{TRACKER_OWNER}}/{{TRACKER_REPO}}`.
   Change nothing else on the issue (title, body, assignees, other labels).
+- **Create a child Task:** a new issue that is a sub-issue of the parent `<n>`, in the state that you choose (its label; no label for Backlog). Write the body to a file first.
+  `gh issue create -R {{TRACKER_OWNER}}/{{TRACKER_REPO}} --parent <n> --title "<title>" --body-file <file> --label ol:ready`
+  `gh issue create` prints the new issue's URL; its number is the last part.
 
 ## Quirks
 
