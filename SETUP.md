@@ -11,7 +11,7 @@ At the end, the Open Loops home directory has the five notes files, the third-pa
 - **Report gaps.** For each Slot, check the chosen tool against the Slot's Contract and say what it is missing, with a way to fix the gap or another tool to pick.
 - **Real values go to the home directory only.** Write IDs, paths, repo names and logins into the notes files in the home directory. Never write them into the Open Loops repo: the files in the repo hold placeholders only.
 - **A re-run changes only what the Owner asks** (see "Re-run setup").
-- **Ask before each change outside the home directory**: the crontab, a Host's scheduled job, labels in a Tracker, an issue for the sample Task.
+- **Ask before each change outside the home directory**: the crontab, a Host's scheduled job, labels in a Tracker, an issue for the sample Task, the skills and plugins of step 7.
 
 ## 0. Get the repo
 
@@ -162,9 +162,13 @@ Do not make `state.json`: the first Cycle makes it.
 
 The core uses skills from other projects. They are never copied into the Open Loops repo. The installer gets them from their upstream source, with one route for each agent: the Claude Code plugin marketplace for Claude Code (a plugin is installed whole, so it can bring more skills than the core uses), and `npx skills add` with an explicit skill list for Codex and other agents.
 
+Before you run the installer, show the Owner the table below: each source, the skills that the core uses, and for Claude Code the plugin that brings them. Say that a plugin installs whole, at user scope: it can add more skills and hooks to all of the Owner's Claude Code sessions. Ask one yes/no question, default yes. With yes, run:
+
 ```sh
 <clone>/install-third-party.sh
 ```
+
+With no, install nothing: set `OPENLOOPS_SKIP_THIRD_PARTY=1` for the rest of setup, and tell the Owner which skills the Worker rules need, so that they can install them another way.
 
 - It is safe to run again: a skill that is already installed is skipped.
 - A failed install prints one `warn:` line, and the installer goes on. Tell the Owner each `warn:` line: the Worker rules need those skills.
