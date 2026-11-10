@@ -29,6 +29,7 @@ Rules that the core applies to every Runtime: Worker names are `ol-<slug>`; a Wo
 |---|---|
 | [`herdr.md`](herdr.md) | Herdr with Claude Code or Codex (recommended) |
 | [`tmux.md`](tmux.md) | tmux with Claude Code or Codex (local fallback) |
+| [`herdr-core.md`](herdr-core.md) | herdr-core (`hc`, the server of the Herdr app) with Claude Code or Codex (in test) |
 
 Each example starts Claude Code Workers, and its "Codex agent" section gives the lines for Codex Workers.
 
@@ -62,4 +63,20 @@ Each example starts Claude Code Workers, and its "Codex agent" section gives the
 | Input Request keys | "Send text or keys to a live Worker": "one-shot approve", "deny", "Never send" |
 | Runtime ids | "Runtime ids to store in `state.json`" |
 | Worktrees | "Workspaces" line |
+| Cap | "Cap on live Workers" line |
+
+## Contract map: `herdr-core.md`
+
+| Capability | Line in `herdr-core.md` |
+|---|---|
+| Spawn a named Worker (agent, model, directory, first prompt) | "Spawn a Worker": `hc run --bg --json --name ol-<slug> --cwd <workspace-path>` |
+| List the Workers with status | "List Workers with status": `hc ls --json` |
+| Read recent output | "Read recent output": `hc read <address> --lines 40` |
+| Send text or keys | "Send text or keys to a live Worker": `hc keys <address> 1`, `hc send <address> "<text>"` |
+| Stop a Worker | "Stop a Worker": `hc kill <address>`, `hc rm <address>` |
+| Core statuses | "List Workers with status": the table that maps `status` and `turn` to each core status |
+| Agent, model, extras | "Agent", "Worker model", "Build Spec prefix", `--agent <name>`, "Codex agent" |
+| Input Request keys | "Send text or keys to a live Worker": "one-shot approve", "deny", "Never send" |
+| Runtime ids | "Runtime ids to store in `state.json`" |
+| Worktrees | "hc does not make worktrees" |
 | Cap | "Cap on live Workers" line |
