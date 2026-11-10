@@ -22,7 +22,7 @@ Worker model: `{{WORKER_MODEL}}` (`default`: leave out `--model` and its value; 
 
 Cap on live Workers: 5
 
-Workspaces: hc does not make worktrees. The core makes each Workspace as a plain git worktree.
+Workspaces: hc does not make worktrees. The core makes each Workspace as a plain git worktree. Give absolute paths: `git -C <workspace> worktree add -b ol-<slug> <workspace>/.openloops/worktrees/<slug> "$START_POINT"`.
 
 Runtime ids to store in `state.json`: `{"hc_address": "<address>"}` (for example `{"hc_address": "t7"}`). A name is unique only among live terminals: a stopped Worker keeps its name until `hc rm`, and a new Worker can get the same name with a new address. So use the address in every command below, and use the name only to find a live Worker that has no record yet.
 
@@ -43,10 +43,10 @@ In the commands below, `<workspace>` is the project repo (the Spec's `workspace:
 
    Read `.address` from the JSON (for example `t7`). This is the Runtime id. If the command returns an error, the spawn failed. `--no-parent` and `--outlive-parent` keep the Worker alive after the Orchestrator's session ends. `--no-notify` stops hc from typing notes into the Orchestrator.
 
-3. Check that the first prompt landed: `hc get <address> --json`. The prompt is in the agent's arguments, so it runs by itself when the agent is up; do not send it a second time while the agent starts.
+3. Check that the first prompt landed: `hc get <address> --json`. The prompt is in the agent's arguments. With no start prompt, it runs by itself when the agent is up; do not send it a second time while the agent starts.
    - Landed: `.status.state` is `working`, or `.turn` is `1` or more.
    - Starting: `.turn` is `0` and `.status` is `null` or `.status.state` is `idle`. hc reports `idle` at turn 0 before the agent has taken its first prompt, so this is not `idle`. Read the output (see "Read recent output"). If it shows the folder-trust prompt, answer it as "Send text or keys" says. Otherwise check again after 5 seconds, for up to 30 seconds.
-   - If the agent is up (its empty input box shows), `.turn` is still `0`, and the first prompt is not in the output, the prompt did not land: send it as "Send a prompt" says.
+   - After a start prompt (for example the folder-trust prompt), the agent often drops the first prompt. If the agent is up (its empty input box shows), `.turn` is still `0`, and the first prompt is not in the output, the prompt did not land: send it as "Send a prompt" says.
 
 - Build Spec prefix: start the first prompt with `/goal ` (Claude Code's goal command keeps the agent working until the goal is met).
 - Exploration Spec with `agent: <name>`: add `--agent <name>` after `--model {{WORKER_MODEL}}`. Claude Code finds the agent file at `{{HOME_DIR}}/.claude/agents/<name>.md` (setup copies `core/agents/<name>.md` there), because `{{EXTRA_DIRS}}` adds the Open Loops home directory with `--add-dir`.
@@ -96,7 +96,7 @@ hc read <address> --lines 40 | grep -v '^[[:space:]]*$' | tail -n 40
     - one-shot approve: `hc keys <address> 1`
     - deny: the digit of the `No` option. Read it from the menu: it can be `2`, `3` or `4` (a Claude Code permission prompt can show `1. Yes`, `2. Yes, and always allow ...`, `3. Yes, and switch to auto mode`, `4. No`).
   - **Menu with no numbers:** move the `❯` cursor with `down` or `up`, then press `enter`, in one command. Example, from the first option to the second: `hc keys <address> down enter`.
-    - trust the Workspace folder (the folder-trust prompt at start; the cursor starts on `No, exit`): `hc keys <address> down enter`. The Workspace is the Worker's own worktree, so always trust it. The first prompt then runs by itself; check that it landed (step 3 of "Spawn a Worker").
+    - trust the Workspace folder (the folder-trust prompt at start; the cursor starts on `No, exit`): `hc keys <address> down enter`. The Workspace is the Worker's own worktree, so always trust it. Then check that the first prompt landed (step 3 of "Spawn a Worker"): the agent often drops it at this step.
   - Never send `2` on a three-option or four-option numbered permission prompt: it stores a permanent permission rule. Never choose `Yes, and switch to auto mode` or any option that approves for the rest of the session. Never choose `No, exit` on the folder-trust prompt: it ends the Worker. Never send `y` or `n` (the menu ignores them). Never send `esc`: it destroys the prompt.
 - Send a prompt (for example the gap-fill re-prompt): `hc send <address> "<text>"`, or for a long prompt in a file, `hc send <address> "$(cat <file>)"`. `hc send` pastes the text and presses Enter. Never use `--force`.
   - If the Worker shows an Input Request, hc refuses the prompt (exit 9, `kind` `blocked`) and types nothing: answer the Input Request first.
