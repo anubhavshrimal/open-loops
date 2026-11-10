@@ -59,8 +59,14 @@ NOTES_FILES = {
     "review.md": REPO / "adapters/review/local-branch.md",
 }
 
-RUNTIMES = ("tmux", "herdr")
+RUNTIMES = ("tmux", "herdr", "herdr-core")
 HERDR_SESSION = "openloops-fixture"
+# herdr-core (`hc`): the fixture's own core, in session HC_SESSION with scratch runtime and state
+# directories, so that it never sees or touches the Owner's own core and its terminals.
+HC_SESSION = "openloops-fixture"
+HC_DIRS = {}
+# The CLI of each Runtime, for the missing-tool check.
+RUNTIME_TOOLS = {"tmux": "tmux", "herdr": "herdr", "herdr-core": "hc"}
 
 
 def notes_files(runtime):
@@ -307,9 +313,60 @@ def herdr_agents():
     return None if result is None else [a["name"] for a in result["agents"] if a.get("name")]
 
 
+def hc_socket():
+    return Path(HC_DIRS["XDG_RUNTIME_DIR"]) / "herdr-core" / f"{HC_SESSION}.sock"
+
+
+def hc_core_runs():
+    """True if the fixture's core answers on its socket. A plain connect never starts a core
+    (any hc command does), so the fixture checks this before each hc command."""
+    import socket
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        s.connect(str(hc_socket()))
+        return True
+    except OSError:
+        return False
+    finally:
+        s.close()
+
+
+def hc_json(*args):
+    """hc's JSON output for one command, or None. Never runs hc when the fixture's core is down."""
+    if not hc_core_runs():
+        return None
+    out = subprocess.run(["hc", *args, "--json"], capture_output=True, text=True, stdin=subprocess.DEVNULL)
+    try:
+        return json.loads(out.stdout)
+    except ValueError:
+        return None
+
+
+def hc_terminals(all_=False):
+    """The fixture core's terminals (live only, or also finished), or None if the core does not answer."""
+    result = hc_json("ls", *(["--all"] if all_ else []))
+    return None if result is None else result.get("terminals", [])
+
+
+def hc_terminal(worker):
+    """`hc get` of the live terminal named worker, or {}."""
+    live = next((t for t in hc_terminals() or [] if t.get("name") == worker), None)
+    return (hc_json("get", live["address"]) or {}) if live else {}
+
+
+def hc_core_pid():
+    status = hc_json("server", "status")
+    return status.get("pid") if status else None
+
+
 def workers(runtime):
-    """Names that the Runtime lists (tmux sessions or Herdr agents). Fails if Herdr does not answer,
-    so that a dead server never passes as "the Worker is closed"."""
+    """Names that the Runtime lists (tmux sessions, Herdr agents, or live hc terminals). Fails if Herdr
+    or the hc core does not answer, so that a dead server never passes as "the Worker is closed"."""
+    if runtime == "herdr-core":
+        terminals = hc_terminals()
+        if terminals is None:
+            raise RuntimeError(f"the hc core of session {HC_SESSION} does not answer `hc ls`")
+        return [t["name"] for t in terminals if t.get("name")]
     if runtime == "herdr":
         names = herdr_agents()
         if names is None:
@@ -324,6 +381,9 @@ def herdr_agent(worker):
 
 def pane_command(runtime, worker):
     """The command line that started the Worker's agent."""
+    if runtime == "herdr-core":
+        info = hc_terminal(worker)
+        return " ".join((info.get("foreground") or {}).get("argv") or info.get("argv") or [])
     if runtime == "herdr":
         pane = herdr_agent(worker).get("pane_id", "")
         info = herdr_json("pane", "process-info", "--pane", pane) or {}
@@ -334,6 +394,8 @@ def pane_command(runtime, worker):
 
 def worker_directory(runtime, worker):
     """The directory the Worker's agent started in."""
+    if runtime == "herdr-core":
+        return hc_terminal(worker).get("cwd", "")
     if runtime == "herdr":
         return herdr_agent(worker).get("cwd", "")
     out = subprocess.run(["tmux", "display-message", "-p", "-t", worker, "#{session_path}"], capture_output=True, text=True)
@@ -341,6 +403,13 @@ def worker_directory(runtime, worker):
 
 
 def stop_workers(runtime, names):
+    if runtime == "herdr-core":
+        # Stop and remove every terminal with one of these names, live or finished.
+        for t in hc_terminals(all_=True) or []:
+            if t.get("name") in names:
+                hc_json("kill", t["address"])
+                hc_json("rm", t["address"])
+        return
     for name in names:
         if runtime == "herdr":
             workspace = herdr_agent(name).get("workspace_id")
@@ -383,11 +452,48 @@ def start_herdr_session():
     return None if herdr_agents() is not None else f"the Herdr session {HERDR_SESSION} does not answer"
 
 
+def hc_env_prefix():
+    return " ".join(f"{k}={v}" for k, v in {"HC_SESSION": HC_SESSION, **HC_DIRS}.items())
+
+
+def start_hc_core():
+    """Start the fixture's own hc core, in session HC_SESSION with scratch runtime and state
+    directories, and point every hc command of this process and its children (the Cycles) at it.
+    The core starts with a clean login-like environment, because each Worker starts from the
+    core's environment. Returns an error text, or None."""
+    if not HC_DIRS:
+        root = Path(tempfile.mkdtemp(prefix="openloops-fixture-hc-"))
+        (root / "run").mkdir(mode=0o700)
+        (root / "state").mkdir()
+        HC_DIRS.update({"XDG_RUNTIME_DIR": str(root / "run"), "XDG_STATE_HOME": str(root / "state")})
+    for key in ("HC_TERMINAL_ID", "HC_TERMINAL_SOCKET", "HC_SOCKET"):
+        os.environ.pop(key, None)
+    os.environ.update({"HC_SESSION": HC_SESSION, **HC_DIRS})
+    clean_env = {k: os.environ[k] for k in ("HOME", "USER", "LOGNAME", "SHELL", "PATH", "LANG") if k in os.environ}
+    clean_env.update({"HC_SESSION": HC_SESSION, "TERM": "xterm-256color", **HC_DIRS})
+    subprocess.run(["hc", "server", "start", "--json"], env=clean_env, capture_output=True,
+                   stdin=subprocess.DEVNULL, start_new_session=True)
+    for _ in range(20):
+        if hc_core_runs():
+            return None
+        time.sleep(0.5)
+    return f"the hc core of session {HC_SESSION} did not start"
+
+
+def stop_hc_core():
+    if hc_core_runs():
+        subprocess.run(["hc", "server", "stop", "--json"], capture_output=True, stdin=subprocess.DEVNULL)
+
+
 def stop_hint(runtime):
+    if runtime == "herdr-core":
+        return f"{hc_env_prefix()} hc kill <address>"
     return f"herdr session stop {HERDR_SESSION}" if runtime == "herdr" else "tmux kill-session -t <name>"
 
 
 def attach_hint(runtime):
+    if runtime == "herdr-core":
+        return f"{hc_env_prefix()} hc attach <address>"
     return f"herdr session attach {HERDR_SESSION}" if runtime == "herdr" else "tmux attach -t <name>"
 
 
@@ -497,6 +603,7 @@ class Scenario:
         log = self.sb.home / "orchestrator.log"
         started, entries = time.time(), cycle_log_entries(self.sb)
         before = log.read_text() if log.exists() else ""
+        core_pid = hc_core_pid() if self.runtime == "herdr-core" else None
         try:
             code = subprocess.run(
                 self.command, shell=True, cwd=self.sb.home, timeout=self.args.cycle_timeout_minutes * 60
@@ -509,6 +616,12 @@ class Scenario:
         after = log.read_text() if log.exists() else ""
         self.check(f"Cycle {self.cycles} put its entry at the top and kept every earlier entry",
                    after.startswith("## ") and after.endswith(before), f"{entries} entries before, {cycle_log_entries(self.sb)} after")
+        if self.runtime == "herdr-core":
+            if core_pid is None:
+                self.check(f"Cycle {self.cycles} started no hc core (none runs after it)", not hc_core_runs(), hc_socket())
+            else:
+                self.check(f"Cycle {self.cycles} kept the same hc core (no new core, no restart)",
+                           hc_core_pid() == core_pid, f"pid {core_pid} before, {hc_core_pid()} after")
 
     def quiet_cycle(self, what):
         """Run one Cycle in which nothing changes, and check that it sends no message."""
@@ -918,6 +1031,34 @@ def scenario_untrusted(args):
     return s.finish()
 
 
+def scenario_no_core(args):
+    """herdr-core only: no core runs. The Orchestrator's first hc command starts one, so the Cycle
+    must stop it again at once, alert the Owner once, and change nothing else."""
+    slug = "nocore-file"
+    s = Scenario(14, "no-core: with no hc core, the Cycle starts none and alerts once", args, [slug])
+    sb, check = s.sb, s.check
+    write_spec(sb, slug, "Add nocore.txt", "Add a file `nocore.txt` with one line: `No core.`", "`nocore.txt` has one line, `No core.`")
+    write_task(sb, slug, "Add nocore.txt", "Ready")
+    digest = file_digest(sb.task_file(slug))
+    before = worktrees_and_branches(sb)
+    stop_hc_core()
+    try:
+        check("no hc core runs before the Cycle", not hc_core_runs(), hc_socket())
+        s.cycle()  # also checks that no core runs after the Cycle
+        check("one system_alert", events(sb) == ["system_alert"], events(sb))
+        state = read_state(sb)
+        check("state.json has a Runtime alert", "runtime" in state.get("alerts", {}), state.get("alerts"))
+        check("no Worker record", set(state) <= {"alerts"}, list(state))
+        check("the Ready Task file is unchanged", file_digest(sb.task_file(slug)) == digest)
+        check("no Workspace or branch was made", worktrees_and_branches(sb) == before, worktrees_and_branches(sb))
+    finally:
+        stop_hc_core()  # in case the Cycle left a core
+        error = start_hc_core()
+    check("the fixture's core starts again for the next scenarios", error is None, error)
+    s.state_valid()
+    return s.finish()
+
+
 # name -> (scenario function, the slugs of the Workers it can spawn)
 SCENARIOS = {
     "build": (scenario_build, ["hello-file"]),
@@ -933,7 +1074,10 @@ SCENARIOS = {
     "no-remote": (scenario_no_remote, ["noremote-file"]),
     "no-notifier": (scenario_no_notifier, ["nonotify-file"]),
     "untrusted": (scenario_untrusted, ["untrusted-file"]),
+    "no-core": (scenario_no_core, ["nocore-file"]),
 }
+# Scenarios that only one Runtime has.
+RUNTIME_SCENARIOS = {"no-core": "herdr-core"}
 
 
 def add_agent_options(parser):
@@ -965,7 +1109,7 @@ def main():
     add_agent_options(parser)
     args = parser.parse_args()
 
-    for tool in ("git", args.runtime, "timeout") + (() if args.setup_only else ("claude",)):
+    for tool in ("git", RUNTIME_TOOLS[args.runtime], "timeout") + (() if args.setup_only else ("claude",)):
         if shutil.which(tool) is None:
             sys.exit(f"[fixture] missing tool: {tool}")
 
@@ -975,11 +1119,15 @@ def main():
         print(f"[fixture] sandbox: {sb.root}")
         print(f"[fixture] Cycle command: {cycle_command((sb.home / 'host.md').read_text())}")
         return 0
-    if args.runtime == "herdr":
-        error = start_herdr_session()
+    wrong = [n for n in args.scenario or [] if RUNTIME_SCENARIOS.get(n, args.runtime) != args.runtime]
+    if wrong:
+        sys.exit(f"[fixture] scenarios {wrong} need --runtime {RUNTIME_SCENARIOS[wrong[0]]}")
+    if args.runtime in ("herdr", "herdr-core"):
+        error = start_herdr_session() if args.runtime == "herdr" else start_hc_core()
         if error:
             sys.exit(f"[fixture] {error}")
-    chosen = [name for name in SCENARIOS if name in (args.scenario or SCENARIOS)]
+    chosen = [name for name in SCENARIOS if name in (args.scenario or SCENARIOS)
+              and RUNTIME_SCENARIOS.get(name, args.runtime) == args.runtime]
     names = [f"ol-{slug}" for name in chosen for slug in SCENARIOS[name][1]]
     leftover = [n for n in names if n in workers(args.runtime)]
     if leftover:
@@ -1001,6 +1149,11 @@ def main():
     passed = len(results) == len(chosen) and all(results.values())
     if args.runtime == "herdr" and passed:
         subprocess.run(["herdr", "session", "stop", HERDR_SESSION], capture_output=True)
+    if args.runtime == "herdr-core":
+        if passed:
+            stop_hc_core()
+        else:
+            print(f"[fixture] the hc core still runs for inspection: {hc_env_prefix()} hc ls; stop it: {hc_env_prefix()} hc server stop")
     print("[fixture] === Summary")
     for name, ok in results.items():
         print(f"[fixture] {name}: {'PASSED' if ok else 'FAILED'}")

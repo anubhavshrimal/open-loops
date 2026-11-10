@@ -49,7 +49,19 @@ python3 tests/cycle_fixture/run_fixture.py --runtime herdr --scenario build
 
 `--runtime herdr` puts the example `adapters/runtime/herdr.md` in the home directory instead of `tmux.md`. The scenarios and their checks stay the same; the Worker list is `herdr agent list`. Needs `herdr` in place of `tmux`. The fixture starts its own Herdr session `openloops-fixture` (a separate Herdr server, with a clean environment) and points every `herdr` command of the Cycles at it, so that the fixture never sees or touches your own Herdr agents. Watch the Workers with `herdr session attach openloops-fixture`. The fixture stops the session when all chosen scenarios pass, and keeps it for inspection when one fails (stop it with `herdr session stop openloops-fixture`).
 
-Options: `--scenario` (default: all), `--runtime` (`tmux` or `herdr`, default `tmux`), `--orchestrator-model`, `--worker-model` (default `sonnet`), `--permission-mode` (default `auto`; the Orchestrator and the Workers run unattended, so they must never wait on a permission prompt), `--timeout-minutes` for the Worker phase of one scenario (default 45), `--interval-seconds`, the longest wait for a Worker between Cycles (default 120), `--cycle-timeout-minutes` (default 26). `--setup-only` builds one sandbox and prints its paths with no Cycle.
+### herdr-core instead of tmux
+
+```sh
+python3 tests/cycle_fixture/run_fixture.py --runtime herdr-core --scenario build
+```
+
+`--runtime herdr-core` puts the example `adapters/runtime/herdr-core.md` in the home directory. The scenarios and their checks stay the same; the Worker list is `hc ls`. Needs `hc` in place of `tmux`. The fixture starts its own core in the hc session `openloops-fixture`, with new temp directories for `XDG_RUNTIME_DIR` and `XDG_STATE_HOME` and a clean environment, and points every `hc` command of the Cycles at it, so that the fixture never sees or touches your own core or its terminals. It prints the variables to set to watch the Workers (`hc ls`, `hc attach <address>`). With herdr-core, every Cycle must also keep the same core (no new core, no restart), and one more scenario runs:
+
+14. **`no-core`: no core runs.** The fixture stops its core. `nocore-file` is Ready. After one Cycle: no core runs (the Orchestrator stopped the core that its first `hc` command started), there is one `system_alert` and a `runtime` alert in `state.json`, the Task file is unchanged, and there is no record, Workspace or branch. Then the fixture starts its core again.
+
+The fixture stops its core when all chosen scenarios pass, and keeps it for inspection when one fails.
+
+Options: `--scenario` (default: all), `--runtime` (`tmux`, `herdr` or `herdr-core`, default `tmux`), `--orchestrator-model`, `--worker-model` (default `sonnet`), `--permission-mode` (default `auto`; the Orchestrator and the Workers run unattended, so they must never wait on a permission prompt), `--timeout-minutes` for the Worker phase of one scenario (default 45), `--interval-seconds`, the longest wait for a Worker between Cycles (default 120), `--cycle-timeout-minutes` (default 26). `--setup-only` builds one sandbox and prints its paths with no Cycle.
 
 The fixture prints `SCENARIO <n> PASSED` or the failed checks for each scenario, then a summary that ends with `ALL <n> SCENARIOS PASSED` (exit 0) or `SOME SCENARIOS FAILED` (exit 1). It keeps every sandbox for inspection and prints its path.
 

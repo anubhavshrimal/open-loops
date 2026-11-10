@@ -120,7 +120,8 @@ class SandboxTest(unittest.TestCase):
     def test_every_scenario_has_unique_worker_slugs(self):
         slugs = [slug for _, names in run_fixture.SCENARIOS.values() for slug in names]
         self.assertEqual(len(slugs), len(set(slugs)))
-        self.assertEqual(len(run_fixture.SCENARIOS), 13)
+        # 13 scenarios for every Runtime, plus the ones that only one Runtime has.
+        self.assertEqual(len(run_fixture.SCENARIOS), 13 + len(run_fixture.RUNTIME_SCENARIOS))
 
     def test_notifications_parse_event_names(self):
         self.sb.notifier_log.write_text("2026-10-06T22:31:04-07:00 spawned Picked up\n2026-10-06T22:32:04-07:00 done Done\n")
@@ -196,6 +197,20 @@ class HerdrSandboxTest(unittest.TestCase):
         self.assertNotRegex(runtime_md, r"\{\{[A-Z_]+\}\}")
         self.assertIn("herdr agent start ol-<slug> --kind claude", runtime_md)
         self.assertIn(f"--add-dir {sb.tracker}", runtime_md)
+
+    def test_herdr_core_runtime_fills_the_herdr_core_notes_file(self):
+        with tempfile.TemporaryDirectory(prefix="openloops-offline-") as tmp:
+            sb = run_fixture.build_sandbox(Path(tmp), "sonnet", "sonnet", "auto", runtime="herdr-core")
+            runtime_md = (sb.home / "runtime.md").read_text()
+        self.assertNotRegex(runtime_md, r"\{\{[A-Z_]+\}\}")
+        self.assertIn("hc run --bg --json --name ol-<slug>", runtime_md)
+        self.assertIn('"$(command -v claude)" --model sonnet --permission-mode auto', runtime_md)
+        self.assertIn(f"--add-dir {sb.tracker}", runtime_md)
+        self.assertIn("hc server status", runtime_md)
+
+    def test_the_no_core_scenario_runs_only_with_herdr_core(self):
+        self.assertEqual(run_fixture.RUNTIME_SCENARIOS, {"no-core": "herdr-core"})
+        self.assertEqual(set(run_fixture.RUNTIME_TOOLS), set(run_fixture.RUNTIMES))
 
 
 class CoreIsAgentNeutralTest(unittest.TestCase):
