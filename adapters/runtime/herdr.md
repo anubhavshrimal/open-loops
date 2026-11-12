@@ -106,10 +106,10 @@ If the read by agent name fails, read the pane: `herdr pane read <pane_id> --sou
 - Answer an Input Request. Read the menu first: the keys depend on whether its options have numbers.
   - **Numbered menu:** send the digit of the option. The digit selects at once; send no `enter`.
     - one-shot approve: `herdr agent send-keys ol-<slug> 1`
-    - deny: the digit of the `No` option (usually `3`; `2` on a two-option prompt)
+    - deny: read the menu and send the digit of the option whose text is `No`. Do not use a fixed digit: the number of options changes. Example, a Claude Code permission prompt: `1. Yes`, `2. Yes, and always allow ...`, `3. Yes, and switch to auto mode`, `4. No`; here deny is `4`, and `3` approves.
   - **Menu with no numbers:** move the `❯` cursor with `down` or `up`, then press `enter`. Example, from the first option to the second: `herdr agent send-keys ol-<slug> down enter`.
     - trust the Workspace folder (the folder-trust prompt at start; the cursor starts on `No, exit`): `down`, then `enter`. The Workspace is the Worker's own worktree, so always trust it. Then read the output again: if the first prompt did not land, send it again as step 3 of "Spawn a Worker" says.
-  - Never send `2` on a three-option numbered permission prompt: it stores a permanent permission rule. Never choose `No, exit` on the folder-trust prompt: it ends the Worker. Never send `y` or `n` (the menu ignores them). Never send `esc`: it destroys the prompt.
+  - Never send a digit before you read the menu. Never choose an option that says `always allow` or `don't ask again` (in Claude Code usually `2`): it stores a permanent permission rule. Never choose `Yes, and switch to auto mode`: it changes the Worker's permission mode. Never choose `No, exit` on the folder-trust prompt: it ends the Worker. Never send `y` or `n` (the menu ignores them). Never send `esc`: it destroys the prompt.
 - Send a prompt (for example the gap-fill re-prompt): `herdr agent prompt ol-<slug> "<text>"`. If the agent shows an Input Request, Herdr rejects the prompt; answer the Input Request first.
 - Check that a prompt landed: `herdr agent wait ol-<slug> --until working --timeout 10000`. If it does not reach `working`, read the output. If the text sits unsent in the input box, submit it with `herdr agent send-keys ol-<slug> enter` and wait again.
 - Wait for the next settled status (the permission-drain loop): `herdr agent wait ol-<slug> --timeout 15000`. It returns at `idle`, `done` or `blocked`.

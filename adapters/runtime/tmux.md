@@ -59,10 +59,10 @@ tmux capture-pane -p -t ol-<slug> -S -40
 - Answer an Input Request. Read the menu first: the keys depend on whether its options have numbers.
   - **Numbered menu:** send the digit of the option, no Enter (the digit selects at once).
     - one-shot approve: `tmux send-keys -t ol-<slug> 1`
-    - deny: the digit of the `No` option (usually `3`; `2` on a two-option prompt)
+    - deny: read the menu and send the digit of the option whose text is `No`. Do not use a fixed digit: the number of options changes. Example, a Claude Code permission prompt: `1. Yes`, `2. Yes, and always allow ...`, `3. Yes, and switch to auto mode`, `4. No`; here deny is `4`, and `3` approves.
   - **Menu with no numbers:** move the `❯` cursor with `Down` or `Up`, one key per line, then press `Enter`. Example, from the first option to the second: `tmux send-keys -t ol-<slug> Down` then `tmux send-keys -t ol-<slug> Enter`.
     - trust the Workspace folder (the folder-trust prompt at start; the cursor starts on `No, exit`): `Down`, then `Enter`. The Workspace is the Worker's own worktree, so always trust it. After you trust it, read the output again: the agent can drop the first prompt at this step. If the input box is empty and the Worker is not `working`, send the first prompt again from `first-prompt.md` as "Send a prompt" says.
-  - Never send `2` on a three-option numbered permission prompt: it stores a permanent permission rule. Never choose `No, exit` on the folder-trust prompt: it ends the Worker. Never send `Escape`: it destroys the prompt.
+  - Never send a digit before you read the menu. Never choose an option that says `always allow` or `don't ask again` (in Claude Code usually `2`): it stores a permanent permission rule. Never choose `Yes, and switch to auto mode`: it changes the Worker's permission mode. Never choose `No, exit` on the folder-trust prompt: it ends the Worker. Never send `Escape`: it destroys the prompt.
 - Send a prompt (for example the gap-fill re-prompt): write it to a file, paste it, then press Enter:
 
 ```sh
