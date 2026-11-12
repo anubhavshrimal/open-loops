@@ -33,6 +33,15 @@ Every `hc` command in this file prints JSON when its output goes to a pipe or a 
 
 In the commands below, `<workspace>` is the project repo (the Spec's `workspace:`) and `<workspace-path>` is the Worker's Workspace (the worktree, or the directory in directory mode).
 
+Name check, before the core makes the Workspace. hc takes a terminal name of 1 to 32 characters, each one of `a-z`, `0-9`, `-` or `_`. So the slug can have at most 29 characters:
+
+```sh
+printf '%s\n' "ol-<slug>" | grep -Eqx '[a-z0-9_-]{1,32}'
+```
+
+- Exit 0: go on with step 1.
+- Any other exit: hc refuses the name. Treat it as a spawn error: make no Workspace and start no Worker. The Owner renames the Spec file to fit (for example `notify-delivery.md`, not `configure-notification-delivery.md`).
+
 1. Write the first prompt to the file `<workspace>/.openloops/<slug>/first-prompt.md` (the state directory already exists).
 2. Start the Worker in a new terminal, named `ol-<slug>`, in the Workspace, with the first prompt as the agent's first argument:
 

@@ -276,6 +276,19 @@ class HerdrCoreCommandsTest(unittest.TestCase):
         self.assertEqual(result.stdout, "")
 
 
+    def test_name_check_takes_29_slug_characters_and_no_more(self):
+        check = self.block_after("Name check, before the core makes the Workspace")
+        for slug, ok in (("a" * 29, True), ("a" * 30, False), ("Paper-plan", False), ("paper.plan", False), ("hello-file", True)):
+            result = self.run_sh(check.replace("<slug>", slug))
+            self.assertEqual(result.returncode == 0, ok, slug)
+
+    def test_every_fixture_worker_name_passes_the_name_check(self):
+        check = self.block_after("Name check, before the core makes the Workspace")
+        for _, slugs in run_fixture.SCENARIOS.values():
+            for slug in slugs:
+                self.assertEqual(self.run_sh(check.replace("<slug>", slug)).returncode, 0, slug)
+
+
 class FixtureCoreIsolationTest(unittest.TestCase):
     """The fixture starts its own hc core: Owner hc variables in the environment never reach it."""
 
