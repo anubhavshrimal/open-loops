@@ -276,6 +276,37 @@ class HerdrCoreCommandsTest(unittest.TestCase):
         self.assertEqual(result.stdout, "")
 
 
+class FixtureCoreIsolationTest(unittest.TestCase):
+    """The fixture starts its own hc core: Owner hc variables in the environment never reach it."""
+
+    def test_start_hc_core_drops_the_owner_variables_and_selects_its_own_session(self):
+        import os
+        from unittest import mock
+        with tempfile.TemporaryDirectory(prefix="openloops-offline-") as tmp:
+            stub_dir = Path(tmp) / "bin"
+            stub_dir.mkdir()
+            seen = Path(tmp) / "env.json"
+            stub = stub_dir / "hc"
+            stub.write_text(f"#!/bin/sh\nexec {sys.executable} -c 'import json, os; json.dump(dict(os.environ), open(\"{seen}\", \"w\"))'\n")
+            stub.chmod(0o755)
+            owner = {"HC_SESSION": "default", "HC_SOCKET": "/owner/default.sock", "HC_TERMINAL_ID": "t1",
+                     "HC_TERMINAL_SOCKET": "/owner/t1.sock", "PATH": f"{stub_dir}:{os.environ['PATH']}"}
+            with mock.patch.dict(os.environ, owner), mock.patch.dict(run_fixture.HC_DIRS, clear=True), \
+                    mock.patch.object(run_fixture, "hc_core_runs", return_value=True):
+                self.assertIsNone(run_fixture.start_hc_core())
+                after = dict(os.environ)
+                dirs = dict(run_fixture.HC_DIRS)
+            core_env = json.loads(seen.read_text())
+        for env in (core_env, after):
+            self.assertEqual(env["HC_SESSION"], run_fixture.HC_SESSION)
+            self.assertNotEqual(env["HC_SESSION"], "default")
+            for key in ("HC_SOCKET", "HC_TERMINAL_ID", "HC_TERMINAL_SOCKET"):
+                self.assertNotIn(key, env)
+            for key, value in dirs.items():
+                self.assertEqual(env[key], value)
+                self.assertTrue(value.startswith(tempfile.gettempdir()), value)
+
+
 class CoreIsAgentNeutralTest(unittest.TestCase):
     SLOT_PRODUCTS = re.compile(r"asana|github|herdr|tmux|slack|gitlab|linear|claude|codex|kirocrew|openclaw", re.I)
 
