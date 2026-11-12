@@ -158,7 +158,7 @@ The Runtime spawns, watches and stops Workers. A Runtime must supply all five:
 - [ ] Whether the Runtime makes worktrees itself. If not, the core makes each Workspace as a plain git worktree at `<repo>/.openloops/worktrees/<slug>`.
 - [ ] The cap on live Workers (default 5).
 
-Rules for every Runtime: Worker names are `ol-<slug>`; a Workspace is never force-overwritten; Workers run in auto or bypass permission mode. Examples: [Herdr](adapters/runtime/herdr.md) (recommended), [tmux](adapters/runtime/tmux.md) (fallback), each with Claude Code or Codex.
+Rules for every Runtime: Worker names are `ol-<slug>`; a Workspace is never force-overwritten; Workers run in auto or bypass permission mode. Examples: [herdr-core](adapters/runtime/herdr-core.md) (recommended), [Herdr TUI](adapters/runtime/herdr.md), [tmux](adapters/runtime/tmux.md) (fallback), each with Claude Code or Codex.
 
 ### Notifier
 
@@ -233,4 +233,4 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 
 ## 12. Tests
 
-The Cycle fixture in [`tests/cycle_fixture/`](tests/cycle_fixture/README.md) runs real Cycles in a sandbox with the local fallbacks and checks only external results: Task files, `state.json`, git branches, the Cycle log and the Notifier log. Its offline checks also verify that each Slot Contract in this file is the same as in `adapters/<slot>/README.md`.
+The Cycle fixture in [`tests/cycle_fixture/`](tests/cycle_fixture/README.md) runs real Cycles in a sandbox with the local fallbacks and the recommended Runtime, and checks only external results: Task files, `state.json`, git branches, the Cycle log and the Notifier log. Its offline checks also verify that each Slot Contract in this file is the same as in `adapters/<slot>/README.md`.

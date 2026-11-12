@@ -49,7 +49,7 @@ In the commands below, `<workspace>` is the project repo (the Spec's `workspace:
    - After a start prompt (for example the folder-trust prompt), the agent often drops the first prompt. If the agent is up (its empty input box shows), `.turn` is still `0`, and the first prompt is not in the output, the prompt did not land: send it as "Send a prompt" says.
 
 - Build Spec prefix: start the first prompt with `/goal ` (Claude Code's goal command keeps the agent working until the goal is met).
-- Exploration Spec with `agent: <name>`: add `--agent <name>` after `--model {{WORKER_MODEL}}`. Claude Code finds the agent file at `{{HOME_DIR}}/.claude/agents/<name>.md` (setup copies `core/agents/<name>.md` there), because `{{EXTRA_DIRS}}` adds the Open Loops home directory with `--add-dir`.
+- Exploration Spec with `agent: <name>`: add `--agent <name>` after `--model {{WORKER_MODEL}}`. Example for `agent: auto-researcher`: `"$(command -v claude)" --model {{WORKER_MODEL}} --agent auto-researcher --permission-mode ...`. Claude Code finds the agent file at `{{HOME_DIR}}/.claude/agents/<name>.md` (setup copies `core/agents/<name>.md` there), because `{{EXTRA_DIRS}}` adds the Open Loops home directory with `--add-dir`.
 - Effort: add `--effort <level>` after the model to set it.
 - Extra directories: `{{EXTRA_DIRS}}` gives the Worker access outside its Workspace to the Tracker files, the home directory and the Spec files, one `--add-dir <path>` for each (for example `--add-dir ~/.openloops --add-dir ~/tasks`).
 

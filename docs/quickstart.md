@@ -7,7 +7,7 @@ From nothing to your first Task in In Review. Your coding agent does the setup; 
 - A machine that stays on while you are away: a remote machine, or an always-on local one. The Host, the Runtime and the Workspaces all run on it.
 - `git`, `python3`, `timeout` and `crontab`.
 - A coding agent with a shell: Claude Code (`claude`) or Codex (`codex`), logged in.
-- A Runtime: [Herdr](https://github.com/herdrdev/herdr) (recommended) or `tmux`.
+- A Runtime: [herdr-core](https://github.com/herdrdev/herdr-core) (`hc`, recommended), the [Herdr](https://github.com/herdrdev/herdr) TUI, or `tmux`. herdr-core and the Herdr TUI do not share agents: in the Herdr TUI you do not see herdr-core Workers. Watch them in the Herdr app, or with `hc ls` and `hc attach <address>`.
 - A project repo with one build and test command (for example `make test` or `npm test`).
 - For the defaults: `gh`, logged in (`gh auth status`). Without it, use the local fallbacks.
 
@@ -16,8 +16,9 @@ From nothing to your first Task in In Review. Your coding agent does the setup; 
 Start it from your own shell, not from an agent's shell. (A server that an agent's sandboxed shell starts passes that sandbox to every Worker.)
 
 ```sh
-tmux new-session -d -s main    # tmux
-herdr                          # or Herdr: open it once
+hc server start                # herdr-core (or open the Herdr app)
+herdr                          # or the Herdr TUI: open it once
+tmux new-session -d -s main    # or tmux
 ```
 
 ## 3. Ask your agent to set up Open Loops
@@ -32,7 +33,7 @@ The agent follows [`SETUP.md`](../SETUP.md). It clones the repo to `~/.openloops
 |---|---|---|
 | Tracker | GitHub Issues (4 labels `ol:ready`, `ol:working`, `ol:blocked`, `ol:in-review`) | Markdown files in `~/.openloops/tasks` |
 | Host | cron + `claude -p`, every 30 minutes | the same |
-| Runtime | Herdr, if installed | tmux |
+| Runtime | herdr-core, if `hc` is installed | tmux |
 | Permission mode | auto mode (read the warning that it shows you) | the same |
 | Notifier | log file `~/.openloops/notifications.log` | the same |
 | Review System | GitHub PR, opened as a draft | Local branch: the Task branch is the PR |
@@ -51,7 +52,7 @@ The agent makes the sample Task "Add hello.txt" in Ready, with the Spec [`exampl
 tail -n 20 ~/.openloops/notifications.log     # spawned, then in_review
 head -n 20 ~/.openloops/orchestrator.log      # one entry for each Cycle, newest first
 cat ~/.openloops/state.json                   # the record "ol-hello-file"
-tmux ls                                        # or: herdr agent list (the Worker "ol-hello-file")
+hc ls                                          # or: herdr agent list, or tmux ls (the Worker "ol-hello-file")
 ```
 
 It works when the Task is In Review, the branch `ol-hello-file` has a commit with `hello.txt`, and the Task has a comment that names the PR (GitHub PR) or the branch (Local branch). Then close the sample PR (or delete the branch) and move the Task to Done.

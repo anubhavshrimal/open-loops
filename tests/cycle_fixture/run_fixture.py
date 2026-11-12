@@ -54,7 +54,7 @@ from schema_check import schema_errors  # noqa: E402
 NOTES_FILES = {
     "tracker.md": REPO / "adapters/tracker/markdown.md",
     "host.md": REPO / "adapters/host/cron-claude.md",
-    "runtime.md": REPO / "adapters/runtime/tmux.md",
+    "runtime.md": REPO / "adapters/runtime/herdr-core.md",
     "notifier.md": REPO / "adapters/notifier/log-file.md",
     "review.md": REPO / "adapters/review/local-branch.md",
 }
@@ -118,7 +118,7 @@ def now():
     return datetime.now().astimezone().isoformat(timespec="seconds")
 
 
-def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="tmux", project_files=(CHECK_SH,),
+def build_sandbox(root, orchestrator_model, worker_model, permission_mode, runtime="herdr-core", project_files=(CHECK_SH,),
                   home=None, notes=True, remote=True):
     """A sandbox with the project repo, its origin, the notes files and the core agents, and no Tasks yet.
     notes=False leaves the home directory empty, for setup to fill (the setup dry run).
@@ -1104,7 +1104,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--scenario", action="append", choices=list(SCENARIOS),
                         help="run only this scenario (repeat for more); default: all")
-    parser.add_argument("--runtime", choices=RUNTIMES, default="tmux", help="example runtime.md to use")
+    parser.add_argument("--runtime", choices=RUNTIMES, default="herdr-core", help="example runtime.md to use")
     parser.add_argument("--setup-only", action="store_true", help="build one sandbox, print its paths, run no Cycle")
     add_agent_options(parser)
     args = parser.parse_args()

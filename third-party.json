@@ -36,7 +36,18 @@
       "license": "Apache-2.0",
       "copyright": "",
       "optional": true,
-      "used_for": "The recommended Runtime. The Owner installs the `herdr` program from its own docs.",
+      "used_for": "An alternative Runtime (the Herdr TUI). The Owner installs the `herdr` program from its own docs.",
+      "skills": [],
+      "install": {}
+    },
+    {
+      "name": "herdrdev/herdr-core",
+      "repo": "https://github.com/herdrdev/herdr-core",
+      "author": "The Herdr authors",
+      "license": "Apache-2.0",
+      "copyright": "",
+      "optional": true,
+      "used_for": "The recommended Runtime. The Owner installs the `hc` program (herdr-core) from its own docs.",
       "skills": [],
       "install": {}
     },

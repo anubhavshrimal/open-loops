@@ -79,7 +79,7 @@ class SandboxTest(unittest.TestCase):
             text = (self.sb.home / name).read_text()
             self.assertNotRegex(text, r"\{\{[A-Z_]+\}\}", name)
         self.assertIn(str(self.sb.tracker), (self.sb.home / "tracker.md").read_text())
-        self.assertIn("tmux new-session -d -s ol-<slug>", (self.sb.home / "runtime.md").read_text())
+        self.assertIn("hc run --bg --json --name ol-<slug>", (self.sb.home / "runtime.md").read_text())
 
     def test_cycle_command_runs_the_core_prompt_under_timeout(self):
         command = run_fixture.cycle_command((self.sb.home / "host.md").read_text())
@@ -189,7 +189,17 @@ class SpecTemplatesTest(unittest.TestCase):
         self.assertTrue((REPO / "core/agents/auto-researcher.md").exists())
 
 
-class HerdrSandboxTest(unittest.TestCase):
+class RuntimeSandboxTest(unittest.TestCase):
+    def test_the_default_runtime_is_herdr_core(self):
+        self.assertEqual(run_fixture.NOTES_FILES["runtime.md"], REPO / "adapters/runtime/herdr-core.md")
+
+    def test_tmux_runtime_fills_the_tmux_notes_file(self):
+        with tempfile.TemporaryDirectory(prefix="openloops-offline-") as tmp:
+            sb = run_fixture.build_sandbox(Path(tmp), "sonnet", "sonnet", "auto", runtime="tmux")
+            runtime_md = (sb.home / "runtime.md").read_text()
+        self.assertNotRegex(runtime_md, r"\{\{[A-Z_]+\}\}")
+        self.assertIn("tmux new-session -d -s ol-<slug>", runtime_md)
+
     def test_herdr_runtime_fills_the_herdr_notes_file(self):
         with tempfile.TemporaryDirectory(prefix="openloops-offline-") as tmp:
             sb = run_fixture.build_sandbox(Path(tmp), "sonnet", "sonnet", "auto", runtime="herdr")

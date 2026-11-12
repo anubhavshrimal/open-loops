@@ -27,7 +27,7 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 
 ## Workers
 
-**Workers are interactive agents in a Runtime with terminal panes (Herdr or tmux), not headless runs.**
+**Workers are interactive agents in a Runtime with terminal panes (herdr-core, Herdr or tmux), not headless runs.**
 *Why:* a headless run ends after one prompt, and it cannot show a permission or question prompt. An interactive Worker stays up: the Orchestrator can read its screen, answer a prompt, send the gap-fill prompt, and the Owner can attach and take over at any time.
 
 **The Orchestrator is a monitor, not a restart loop.** A Worker runs as long as it needs. The Orchestrator never kills a Worker because a Cycle passed.
@@ -46,7 +46,7 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 *Why:* the notes must survive a git reset, a revert or a removed worktree, and must never be committed by mistake.
 
 **Worker names are `ol-<slug>`, from the Spec file name.**
-*Why:* a person can read `tmux ls` or `herdr agent list` and know which Task each Worker has. The prefix also lets the Orchestrator find its own Workers among the Owner's other sessions.
+*Why:* a person can read `hc ls`, `herdr agent list` or `tmux ls` and know which Task each Worker has. The prefix also lets the Orchestrator find its own Workers among the Owner's other sessions.
 
 **The Worker writes the Tracker itself; the Orchestrator verifies and corrects.**
 *Why:* the Worker knows best what it did, so it writes the comment (PR reference, results, blocker). A design where only the Orchestrator wrote the Tracker, from a result file, was tried on paper and dropped: it added a file format and lost the Worker's own words. The Orchestrator still checks the final state, because a Worker can forget a step.
@@ -146,8 +146,8 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 **The core names no Slot product.**
 *Why:* a product name in the core would make every other Owner edit the core. With the names only in notes files, the core is the same for everyone.
 
-**Defaults are the most popular choice (for the Runtime, the recommended one: Herdr), and each Slot has a local fallback that needs no account.**
-*Why:* most Owners already use the default (GitHub, cron, `claude`). The fallbacks let anyone try the full loop on one machine, and they are what the test fixture uses.
+**Defaults are the most popular choice (for the Runtime, the recommended one: herdr-core), and each Slot has a local fallback that needs no account.**
+*Why:* most Owners already use the default (GitHub, cron, `claude`). The fallbacks let anyone try the full loop on one machine, and the test fixture uses them for every Slot except the Runtime (it uses the recommended one).
 
 **The Markdown Tracker has no script.** The agents edit one file per Task directly.
 *Why:* agents are good at editing Markdown. A script would be one more program to install and keep in step with the format.

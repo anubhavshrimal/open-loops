@@ -30,13 +30,13 @@ Check these without questions. Record what you find.
 | Check | How |
 |---|---|
 | Agent CLIs | `command -v claude codex` |
-| Slot CLIs | `command -v git gh herdr tmux timeout crontab python3 npx` |
+| Slot CLIs | `command -v git gh hc herdr tmux timeout crontab python3 npx` |
 | GitHub login | `gh auth status` |
 | `gh` knows sub-issues and dependencies | `gh issue view --help` lists the JSON fields `subIssues` and `blockedBy`. If not, the GitHub Issues Tracker cannot read children or dependencies: tell the Owner to update `gh` |
 | MCP servers | `claude mcp list`; for Codex, the `[mcp_servers]` tables in `~/.codex/config.toml` |
 | Are you a Host? | Are you a KiroCrew or OpenClaw agent, or did the Owner say "You are the Host"? Then that product is the Host. |
 | Existing setup | The notes files `<home>/{tracker,host,runtime,notifier,review}.md`, `<home>/state.json`, and a crontab line with "Run one Open Loops Cycle" (`crontab -l`) |
-| Runtime server | `tmux ls` (a tmux server runs), `herdr agent list` (a Herdr server answers) |
+| Runtime server | `hc server status` (a herdr-core core runs; this command starts a core when none runs, so if `uptime_ms` is below `5000` and `live` and `finished` are `0`, run `hc server stop` at once and record "no core"), `herdr agent list` (a Herdr server answers), `tmux ls` (a tmux server runs) |
 | Project repo | The git repo in the current directory, if any: its path, its `origin` remote (a GitHub repo?), its default branch, and hints for the build and test command (`Makefile`, `package.json` scripts, `pyproject.toml`, `Cargo.toml`, a CI file) |
 
 If the notes files exist, this is a re-run: go to "Re-run setup".
@@ -57,7 +57,7 @@ Ask about the Slots in this order, one at a time. For each Slot:
 |---|---|---|---|
 | Tracker | GitHub Issues: [`tracker/github-issues.md`](adapters/tracker/github-issues.md) | Markdown files (no account): [`tracker/markdown.md`](adapters/tracker/markdown.md) | GitHub Issues: `{{TRACKER_OWNER}}/{{TRACKER_REPO}}` (the repo that holds the Tasks; it can differ from the project repo). Markdown: `{{TRACKER_DIR}}` (default `<home>/tasks`; make the directory). |
 | Host | cron + `claude -p`: [`host/cron-claude.md`](adapters/host/cron-claude.md) | cron + `codex exec`: [`host/cron-codex.md`](adapters/host/cron-codex.md); [KiroCrew](adapters/host/kirocrew.md); [OpenClaw](adapters/host/openclaw.md) | `{{HOME_DIR}}`, `{{CORE_DIR}}`, `{{ORCHESTRATOR_MODEL}}`, `{{ORCHESTRATOR_EFFORT}}` (where the example has it), `{{CRON_PATH}}` for a cron Host (the directories that `command -v` gives for the agent, `git`, `gh` and the Runtime CLI, then `/usr/bin:/bin`), the permission mode (`{{PERMISSION_MODE}}` or `{{CODEX_PERMISSION_FLAGS}}`), and the interval (default 30 minutes). With the wiki module (step 5): `{{GARDENER_DIR}}` and `{{WIKI_DIR}}`. |
-| Runtime | Herdr (recommended, if `herdr` is installed): [`runtime/herdr.md`](adapters/runtime/herdr.md) | tmux: [`runtime/tmux.md`](adapters/runtime/tmux.md) | `{{WORKER_MODEL}}`, `{{PERMISSION_MODE}}`, `{{HOME_DIR}}`, `{{EXTRA_DIRS}}` (one `--add-dir <path>` for the home directory, the Markdown Task directory if any, and each directory that holds Specs). The agent: Claude Code or Codex (each example has a "Codex agent" section). The cap on live Workers (default 5). |
+| Runtime | herdr-core (recommended, if `hc` is installed): [`runtime/herdr-core.md`](adapters/runtime/herdr-core.md) | Herdr TUI: [`runtime/herdr.md`](adapters/runtime/herdr.md); tmux: [`runtime/tmux.md`](adapters/runtime/tmux.md) | `{{WORKER_MODEL}}`, `{{PERMISSION_MODE}}`, `{{HOME_DIR}}`, `{{EXTRA_DIRS}}` (one `--add-dir <path>` for the home directory, the Markdown Task directory if any, and each directory that holds Specs). The agent: Claude Code or Codex (each example has a "Codex agent" section). The cap on live Workers (default 5). |
 | Notifier | The log file: [`notifier/log-file.md`](adapters/notifier/log-file.md) | The Host's own messaging (KiroCrew, OpenClaw) or a messaging MCP server: see [`notifier/README.md`](adapters/notifier/README.md) | `{{NOTIFIER_LOG}}` (default `<home>/notifications.log`). |
 | Review System | GitHub PR (if the project's `origin` is on GitHub and `gh` is logged in): [`review/github-pr.md`](adapters/review/github-pr.md) | Local branch (no hosting service): [`review/local-branch.md`](adapters/review/local-branch.md) | From step 4: `{{PROJECT_REPO}}`, `{{BUILD_TEST_COMMAND}}`, and for GitHub PR `{{OWNER}}/{{REPO}}`. "Open PRs as": draft (default) or ready. "Review rounds": new commits (default) or amend (for a review tool that takes an amended commit as a new revision). |
 
@@ -70,7 +70,7 @@ Notes for each Slot:
   > **Warning: unattended agents.** The Orchestrator and the Workers run with nobody watching, so they must never wait on a permission prompt. That needs auto mode (an agent-side check of each action, for example Claude Code `--permission-mode auto`, or Codex `--sandbox workspace-write --ask-for-approval never`) or bypass mode (no checks at all). On KiroCrew (`--approval-mode auto`) and OpenClaw (the `yolo` preset), the only unattended mode approves every tool with no check: it is bypass mode under another name. Setup uses it on those Hosts, and says so to the Owner. In both modes an agent can run commands, change files and use your logins (`gh`, MCP servers) without asking you. A wrong or hostile Spec, Task comment or web page can make it do harm. Recommended: auto mode, on a machine or account that holds only what Open Loops needs. Use bypass mode only on a machine that is itself a sandbox. You can stop everything at any time (see "Stop and remove").
 
   Settle the permissions with the Owner: auto or bypass mode, and any allow rules the Owner wants for their agent. Do not prescribe an allowlist.
-- **Runtime:** the Runtime server (tmux or Herdr) must run before a Cycle starts, and the Owner starts it from their own shell, never you: a server that an agent's shell starts passes that agent's sandbox to every Worker. Tell the Owner how (`tmux new-session -d -s main`, or open `herdr` once).
+- **Runtime:** the Runtime server (the herdr-core core, the Herdr server or tmux) must run before a Cycle starts, and the Owner starts it from their own shell, never you: a server that an agent's shell starts passes that agent's sandbox to every Worker. Tell the Owner how (`hc server start` or open the Herdr app, open `herdr` once, or `tmux new-session -d -s main`). herdr-core and the Herdr TUI do not share agents: a Herdr TUI user does not see herdr-core Workers in the TUI.
 - **AI disclosure:** ask one question: "Mark the Workers' Tracker comments and PR text as written with an AI agent?" Default: no (`AI disclosure: off`). With yes, write `AI disclosure: _Written with an AI agent._` (or the Owner's own text) in both `tracker.md` and `review.md`.
 - **Models:** `host.md` names the Orchestrator's model and effort, `runtime.md` the Workers'. Ask for each: `default` (recommended: the agent's own default model, which follows its upgrades) or a model name. Write `default` or the name in the notes file. With `default`, leave `--model` and its value out of the start commands that you write: the crontab line or the Host's scheduled job (`host.md`), and the Worker start commands (`runtime.md`). The Owner controls cost and quality here.
 
@@ -183,7 +183,8 @@ What it installs, and the credits (made from [`third-party.json`](third-party.js
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
 | [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
-| [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `herdr` program from its own docs. Not installed by setup. |
+| [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | An alternative Runtime (the Herdr TUI). The Owner installs the `herdr` program from its own docs. Not installed by setup. |
+| [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `hc` program (herdr-core) from its own docs. Not installed by setup. |
 | [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->
 
@@ -193,7 +194,7 @@ These are separate projects with their own licenses. They are downloaded to the 
 
 > **Warning:** from this step on, agents run unattended in the permission mode from step 3 (see the warning there). Start the Host only after the Owner says yes.
 
-1. Make sure that the Runtime server runs (step 1: `tmux ls` or `herdr agent list`). If not, ask the Owner to start it from their own shell.
+1. Make sure that the Runtime server runs (step 1: the `hc server status` check, `herdr agent list` or `tmux ls`). If not, ask the Owner to start it from their own shell.
 2. Start the Host as `<home>/host.md` says in "How a Cycle starts":
    - **cron + `claude -p` or `codex exec`:** add the crontab line from `host.md`, with the `PATH=` line above it, only if no line with "Run one Open Loops Cycle" for this home directory is already there: `(crontab -l 2>/dev/null; cat <file with the two lines>) | crontab -`. Show the Owner `crontab -l` after.
    - **KiroCrew or OpenClaw:** create your own scheduled job with the command in `host.md`, and write its id into `host.md` ("How to stop and remove" uses it).

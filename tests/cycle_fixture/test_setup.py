@@ -204,6 +204,22 @@ class SetupDocTest(unittest.TestCase):
         self.assertNotIn(-1, positions, [s for s, p in zip(self.STEPS, positions) if p == -1])
         self.assertEqual(positions, sorted(positions))
 
+    def test_runtime_row_recommends_herdr_core_and_names_the_alternatives(self):
+        text = (REPO / "SETUP.md").read_text()
+        row = next(line for line in text.splitlines() if line.startswith("| Runtime | "))
+        default, others = row.split(" | ")[1:3]
+        self.assertIn("herdr-core (recommended", default)
+        self.assertIn("adapters/runtime/herdr-core.md", default)
+        self.assertIn("adapters/runtime/herdr.md", others)
+        self.assertIn("adapters/runtime/tmux.md", others)
+
+    def test_runtime_server_check_stops_a_core_that_it_started(self):
+        # Any hc command starts a core; setup must never leave one that its own shell started.
+        text = (REPO / "SETUP.md").read_text()
+        row = next(line for line in text.splitlines() if line.startswith("| Runtime server | "))
+        self.assertIn("hc server status", row)
+        self.assertIn("hc server stop", row)
+
     def test_every_example_notes_file_it_names_exists(self):
         text = (REPO / "SETUP.md").read_text()
         for link in re.findall(r"\]\(([^)#]+)\)", text):

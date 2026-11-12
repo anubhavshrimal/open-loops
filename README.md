@@ -29,7 +29,7 @@ Open Loops takes Tasks from your Tracker and gives each one to a coding-agent Wo
 
 ## Quick start
 
-You need a machine that stays on, `git`, a coding agent with a shell and a Runtime ([Herdr](https://github.com/herdrdev/herdr) or `tmux`). The defaults also use `gh`, logged in.
+You need a machine that stays on, `git`, a coding agent with a shell and a Runtime ([herdr-core](https://github.com/herdrdev/herdr-core) (`hc`), [Herdr](https://github.com/herdrdev/herdr) or `tmux`). The defaults also use `gh`, logged in.
 
 1. **Install.** Tell your coding agent (Claude Code, Codex, or any agent with a shell; a KiroCrew or OpenClaw agent can be the Host itself):
 
@@ -86,7 +86,7 @@ The states, the Cycle and the invariants are in [`SPEC.md`](SPEC.md). The words 
   <img alt="Terminal re-enactment with burned-in captions. You tell your coding agent: Set up Open Loops. Setup asks one question at a time; the Host question lists Claude Code, Codex, KiroCrew and OpenClaw. The sample Task Add hello.txt goes to Ready. At 10:30 a Cycle spawns the Worker ol-hello-file in its own git worktree in a Herdr pane. The Worker builds, tests and reviews, then opens draft PR #2 itself and moves the Task to In Review. At 11:00 the next Cycle only sends in_review and writes the Cycle log. You leave a Review comment; a comment from a bot on the PR is skipped because bots are not trusted authors. At 11:30 the next Cycle respawns the Worker in the same worktree; it adds a commit, pushes and replies. You mark the draft PR ready and merge it; you do not approve your own PR. At 12:30 the next Cycle moves the Task to Done and sends done. No agent merges." src="assets/terminal-demo-light.gif" width="100%">
 </picture>
 
-<sub>A re-enactment with the default Slots (cron + <code>claude -p</code> as the Host, Herdr, GitHub Issues, a log file, GitHub PR). Task #1, PR #2 and the repo <code>you/my-app</code> are illustrative. Time is sped up; the clock shows the time of day in the story. The commands and log lines follow <a href="core/orchestrator.md"><code>core/orchestrator.md</code></a>, <a href="core/worker-rules.md"><code>core/worker-rules.md</code></a> and the <a href="adapters/"><code>adapters/</code></a> notes files; the wording follows a real <a href="tests/cycle_fixture/README.md">Cycle fixture</a> run.</sub>
+<sub>A re-enactment with cron + <code>claude -p</code> as the Host, the Herdr TUI as the Runtime, GitHub Issues, a log file and GitHub PR. Task #1, PR #2 and the repo <code>you/my-app</code> are illustrative. Time is sped up; the clock shows the time of day in the story. The commands and log lines follow <a href="core/orchestrator.md"><code>core/orchestrator.md</code></a>, <a href="core/worker-rules.md"><code>core/worker-rules.md</code></a> and the <a href="adapters/"><code>adapters/</code></a> notes files; the wording follows a real <a href="tests/cycle_fixture/README.md">Cycle fixture</a> run.</sub>
 </details>
 
 ## Slots
@@ -102,7 +102,7 @@ Each Slot is a place where setups differ. Its Contract (in [`adapters/`](adapter
 |---|---|---|---|
 | [Tracker](adapters/tracker/README.md) | Stores Tasks and their states | GitHub Issues via `gh` | Markdown files |
 | [Host](adapters/host/README.md) | Starts a Cycle on a schedule | cron + `claude -p` (Claude Code) | cron + `codex exec` (Codex), KiroCrew, OpenClaw |
-| [Runtime](adapters/runtime/README.md) | Spawns, watches and stops Workers | Herdr | tmux |
+| [Runtime](adapters/runtime/README.md) | Spawns, watches and stops Workers | herdr-core (`hc`) | Herdr TUI, tmux |
 | [Notifier](adapters/notifier/README.md) | Sends you messages | log file | the Host's own messaging (KiroCrew, OpenClaw), a messaging MCP server |
 | [Review System](adapters/review/README.md) | Holds PRs, Review comments and Checks | GitHub PR via `gh` | Local branch |
 
@@ -161,7 +161,8 @@ Open Loops installs these projects from their upstream source. None of their fil
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
 | [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
-| [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `herdr` program from its own docs. Not installed by setup. |
+| [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | An alternative Runtime (the Herdr TUI). The Owner installs the `herdr` program from its own docs. Not installed by setup. |
+| [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `hc` program (herdr-core) from its own docs. Not installed by setup. |
 | [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->
 

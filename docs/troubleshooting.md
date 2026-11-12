@@ -40,10 +40,10 @@ Look for the Task's name in the newest `orchestrator.log` entry.
 
 ## A Worker does not start, or starts and does nothing
 
-- **No Runtime server.** tmux: `tmux ls` must list a server. Herdr: `herdr agent list` must answer. Start the server from your own shell.
+- **No Runtime server.** herdr-core: a Cycle that finds no core sends a `system_alert`; run `hc server start` in your own shell. Herdr TUI: `herdr agent list` must answer. tmux: `tmux ls` must list a server. Start the server from your own shell (`hc server start`, `herdr`, or `tmux new-session -d -s main`).
 - **Workers fail at once, with sandbox or permission errors.** The Runtime server was started from an agent's sandboxed shell, so every Worker gets that sandbox. Stop the server and start it again from your own shell.
 - **The worktree was not made.** The log says why. Often the branch `ol-<slug>` already exists from manual git work. Open Loops never force-overwrites: delete or rename that branch yourself, or rename the Spec file (a new slug).
-- **The first prompt sits unsent in the Worker's input box.** The Orchestrator checks for this right after the spawn and submits it. If it stays, attach (`tmux attach -t ol-<slug>`) and press Enter.
+- **The first prompt sits unsent in the Worker's input box.** The Orchestrator checks for this right after the spawn and submits it. If it stays, attach (`hc attach <address>`, or `tmux attach -t ol-<slug>`) and press Enter.
 - **The Worker waits on the folder-trust prompt.** The Orchestrator answers it. If the Worker exited instead, check that `runtime.md` was not changed in its "Never send" lines.
 - **An Exploration Spec fails with an unknown agent.** The agent file is missing: `<home>/.claude/agents/auto-researcher.md` must exist (setup copies it from `core/agents/`), and `runtime.md` must add the home directory with `--add-dir`.
 
@@ -51,11 +51,11 @@ Look for the Task's name in the newest `orchestrator.log` entry.
 
 **Symptom:** an `input_requested` message: "Permission needed" or "Question".
 
-The Orchestrator answers a prompt only when it is safe and the Spec makes the answer clear. Otherwise it waits for you. Attach to the Worker (`tmux attach -t ol-<slug>`, or open Herdr) and answer it. If the same kind of prompt comes back often, settle it in your agent's permission settings, or add the answer to the Spec.
+The Orchestrator answers a prompt only when it is safe and the Spec makes the answer clear. Otherwise it waits for you. Attach to the Worker (`hc attach <address>` or the Herdr app, `tmux attach -t ol-<slug>`, or open Herdr) and answer it. If the same kind of prompt comes back often, settle it in your agent's permission settings, or add the answer to the Spec.
 
 ## The Task did not reach In Review
 
-- Read the Worker's last output (`tmux capture-pane -p -t ol-<slug> -S -60`, or Herdr), its Tracker comment, and its `implementation-notes.html`.
+- Read the Worker's last output (`hc read <address> --lines 60`, `tmux capture-pane -p -t ol-<slug> -S -60`, or Herdr), its Tracker comment, and its `implementation-notes.html`.
 - **Blocked:** the Worker explains why in its Tracker comment. Fix the cause. The Orchestrator moves the Task back to Ready when it sees that the blocker is gone, or move it yourself.
 - **The build and test command fails.** The Worker must pass it before it opens a PR. Check the command in the "Projects" table of `review.md`.
 - **The review skill is missing.** Setup installs `code-review` from mattpocock/skills. Run `./install-third-party.sh` from the clone again.

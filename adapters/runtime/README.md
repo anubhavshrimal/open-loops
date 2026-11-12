@@ -27,9 +27,11 @@ Rules that the core applies to every Runtime: Worker names are `ol-<slug>`; a Wo
 
 | Example | Runtime |
 |---|---|
-| [`herdr.md`](herdr.md) | Herdr with Claude Code or Codex (recommended) |
+| [`herdr-core.md`](herdr-core.md) | herdr-core (`hc`, the server of the Herdr app) with Claude Code or Codex (recommended) |
+| [`herdr.md`](herdr.md) | Herdr TUI with Claude Code or Codex |
 | [`tmux.md`](tmux.md) | tmux with Claude Code or Codex (local fallback) |
-| [`herdr-core.md`](herdr-core.md) | herdr-core (`hc`, the server of the Herdr app) with Claude Code or Codex (in test) |
+
+herdr-core and the Herdr TUI do not share agents: a Herdr TUI user does not see herdr-core Workers in the TUI. Use the Herdr app, or `hc ls` and `hc attach <address>` in a shell.
 
 Each example starts Claude Code Workers, and its "Codex agent" section gives the lines for Codex Workers.
 

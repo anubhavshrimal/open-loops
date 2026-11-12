@@ -6,7 +6,7 @@ An Adapter is the Owner's own tools for one Slot, plus the notes file that tells
 |---|---|---|---|
 | Tracker | `tracker.md` | [tracker/README.md](tracker/README.md) | [GitHub Issues](tracker/github-issues.md) (default), [Markdown](tracker/markdown.md) (fallback) |
 | Host | `host.md` | [host/README.md](host/README.md) | [cron + `claude -p`](host/cron-claude.md), [cron + `codex exec`](host/cron-codex.md), [KiroCrew](host/kirocrew.md), [OpenClaw](host/openclaw.md) |
-| Runtime | `runtime.md` | [runtime/README.md](runtime/README.md) | [Herdr](runtime/herdr.md) (recommended), [tmux](runtime/tmux.md) |
+| Runtime | `runtime.md` | [runtime/README.md](runtime/README.md) | [herdr-core](runtime/herdr-core.md) (recommended), [Herdr TUI](runtime/herdr.md), [tmux](runtime/tmux.md) (fallback) |
 | Notifier | `notifier.md` | [notifier/README.md](notifier/README.md) | [log file](notifier/log-file.md) |
 | Review System | `review.md` | [review/README.md](review/README.md) | [GitHub PR](review/github-pr.md) (default), [Local branch](review/local-branch.md) (fallback) |
 
