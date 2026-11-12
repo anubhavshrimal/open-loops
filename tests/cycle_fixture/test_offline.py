@@ -225,7 +225,7 @@ class RuntimeSandboxTest(unittest.TestCase):
 
 class HerdrCoreCommandsTest(unittest.TestCase):
     """Run the shell commands of herdr-core.md against a stub `hc` and temp sockets: the core check
-    must start no core."""
+    must start no core, and a failed `hc read` must not pass as empty output."""
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
@@ -268,6 +268,12 @@ class HerdrCoreCommandsTest(unittest.TestCase):
             server.close()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(self.marker.exists(), "the core check ran hc")
+
+    def test_a_failed_read_exits_with_an_error(self):
+        read = self.block_after("## Read recent output").replace("<address>", "t9")
+        result = self.run_sh(read)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
 
 
 class CoreIsAgentNeutralTest(unittest.TestCase):

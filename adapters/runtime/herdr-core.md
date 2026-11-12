@@ -46,7 +46,7 @@ In the commands below, `<workspace>` is the project repo (the Spec's `workspace:
 
 3. Check that the first prompt landed: `hc get <address> --json`. The prompt is in the agent's arguments. With no start prompt, it runs by itself when the agent is up; do not send it a second time while the agent starts.
    - Landed: `.status.state` is `working`, or `.turn` is `1` or more.
-   - Starting: `.turn` is `0` and `.status` is `null` or `.status.state` is `idle`. hc reports `idle` at turn 0 before the agent has taken its first prompt, so this is not `idle`. Read the output (see "Read recent output"). If it shows the folder-trust prompt, answer it as "Send text or keys" says. Otherwise check again after 5 seconds, for up to 30 seconds.
+   - Starting: `.turn` is `0` and `.status` is `null` or `.status.state` is `idle`. hc reports `idle` at turn 0 before the agent has taken its first prompt, so this is not `idle`. Read the output (see "Read recent output"). If it shows the folder-trust prompt (or another Input Request), the spawn succeeded: first do the core's move, record and send steps, then answer it as "Send text or keys" says, and check again that the first prompt landed. Otherwise check again after 5 seconds, for up to 30 seconds.
    - After a start prompt (for example the folder-trust prompt), the agent often drops the first prompt. If the agent is up (its empty input box shows), `.turn` is still `0`, and the first prompt is not in the output, the prompt did not land: send it as "Send a prompt" says.
 
 - Build Spec prefix: start the first prompt with `/goal ` (Claude Code's goal command keeps the agent working until the goal is met).
@@ -85,10 +85,10 @@ Read the output too: the keys depend on the menu.
 ## Read recent output
 
 ```sh
-hc read <address> --lines 40 | grep -v '^[[:space:]]*$' | tail -n 40
+out=$(hc read <address> --lines 40) && printf '%s\n' "$out" | grep -v '^[[:space:]]*$' | tail -n 40
 ```
 
-`hc read` prints the whole screen and the history above it, with many empty lines; the filter keeps the last 40 lines with text.
+`hc read` prints the whole screen and the history above it, with many empty lines; the filter keeps the last 40 lines with text. If `hc read` fails, the command exits with its error code and prints nothing on stdout: treat it as a failed read, not as empty output.
 
 ## Send text or keys to a live Worker
 
