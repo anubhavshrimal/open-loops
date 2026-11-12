@@ -1032,11 +1032,11 @@ def scenario_untrusted(args):
 
 
 def scenario_no_core(args):
-    """herdr-core only: no core runs. The Orchestrator's first hc command starts one, so the Cycle
-    must stop it again at once, alert the Owner once, and change nothing else."""
+    """herdr-core only: no core runs. The core check starts none, the Owner gets one alert for the
+    outage and one recovery message, and the Cycle changes nothing else while the core is down."""
     slug = "nocore-file"
-    s = Scenario(14, "no-core: with no hc core, the Cycle starts none and alerts once", args, [slug])
-    sb, check = s.sb, s.check
+    s = Scenario(14, "no-core: with no hc core, the Cycle starts none, alerts once, then recovers", args, [slug])
+    sb, check, worker = s.sb, s.check, f"ol-{slug}"
     write_spec(sb, slug, "Add nocore.txt", "Add a file `nocore.txt` with one line: `No core.`", "`nocore.txt` has one line, `No core.`")
     write_task(sb, slug, "Add nocore.txt", "Ready")
     digest = file_digest(sb.task_file(slug))
@@ -1049,12 +1049,19 @@ def scenario_no_core(args):
         state = read_state(sb)
         check("state.json has a Runtime alert", "runtime" in state.get("alerts", {}), state.get("alerts"))
         check("no Worker record", set(state) <= {"alerts"}, list(state))
-        check("the Ready Task file is unchanged", file_digest(sb.task_file(slug)) == digest)
-        check("no Workspace or branch was made", worktrees_and_branches(sb) == before, worktrees_and_branches(sb))
+        s.quiet_cycle("no core, Owner already told")  # also checks that no core runs after the Cycle
+        check("the Ready Task file is unchanged during the outage", file_digest(sb.task_file(slug)) == digest)
+        check("no Workspace or branch was made during the outage", worktrees_and_branches(sb) == before, worktrees_and_branches(sb))
     finally:
-        stop_hc_core()  # in case the Cycle left a core
+        stop_hc_core()  # in case a Cycle left a core
         error = start_hc_core()
-    check("the fixture's core starts again for the next scenarios", error is None, error)
+    check("the fixture's core starts again", error is None, error)
+    s.cycle()
+    check("system_recovered after the core runs again", events(sb)[:2] == ["system_alert", "system_recovered"], events(sb))
+    check("no second system_alert", events(sb).count("system_alert") == 1, events(sb))
+    check("the Runtime alert is removed", "runtime" not in read_state(sb).get("alerts", {}), read_state(sb).get("alerts"))
+    check("the Cycle went on after recovery: the Ready Task was spawned",
+          worker in read_state(sb) and task_state(sb, slug) in ("Working", "In Review"), task_state(sb, slug))
     s.state_valid()
     return s.finish()
 

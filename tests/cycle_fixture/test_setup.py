@@ -213,12 +213,13 @@ class SetupDocTest(unittest.TestCase):
         self.assertIn("adapters/runtime/herdr.md", others)
         self.assertIn("adapters/runtime/tmux.md", others)
 
-    def test_runtime_server_check_stops_a_core_that_it_started(self):
-        # Any hc command starts a core; setup must never leave one that its own shell started.
+    def test_runtime_server_check_uses_the_core_check_that_starts_no_core(self):
+        # Any hc command starts a core, so setup checks the core with the socket check of herdr-core.md.
         text = (REPO / "SETUP.md").read_text()
         row = next(line for line in text.splitlines() if line.startswith("| Runtime server | "))
-        self.assertIn("hc server status", row)
-        self.assertIn("hc server stop", row)
+        self.assertIn('"Core check"', row)
+        self.assertIn("adapters/runtime/herdr-core.md", row)
+        self.assertIn("Core check, once per Cycle", (REPO / "adapters/runtime/herdr-core.md").read_text())
 
     def test_every_example_notes_file_it_names_exists(self):
         text = (REPO / "SETUP.md").read_text()

@@ -216,11 +216,58 @@ class RuntimeSandboxTest(unittest.TestCase):
         self.assertIn("hc run --bg --json --name ol-<slug>", runtime_md)
         self.assertIn('"$(command -v claude)" --model sonnet --permission-mode auto', runtime_md)
         self.assertIn(f"--add-dir {sb.tracker}", runtime_md)
-        self.assertIn("hc server status", runtime_md)
 
     def test_the_no_core_scenario_runs_only_with_herdr_core(self):
         self.assertEqual(run_fixture.RUNTIME_SCENARIOS, {"no-core": "herdr-core"})
         self.assertEqual(set(run_fixture.RUNTIME_TOOLS), set(run_fixture.RUNTIMES))
+
+
+
+class HerdrCoreCommandsTest(unittest.TestCase):
+    """Run the shell commands of herdr-core.md against a stub `hc` and temp sockets: the core check
+    must start no core."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory(prefix="openloops-offline-")
+        root = Path(self.tmp.name)
+        self.marker = root / "hc-was-called"
+        self.bin = root / "bin"
+        self.bin.mkdir()
+        stub = self.bin / "hc"
+        stub.write_text(f"#!/bin/sh\ntouch {self.marker}\necho '{{\"error\":{{}}}}' >&2\nexit 3\n")
+        stub.chmod(0o755)
+        self.notes = (REPO / "adapters/runtime/herdr-core.md").read_text()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def block_after(self, heading):
+        return re.search(r"```sh\n(.*?)```", self.notes.split(heading, 1)[1], re.S).group(1).strip()
+
+    def run_sh(self, command, **env):
+        full = {"PATH": f"{self.bin}:/usr/bin:/bin", "HOME": self.tmp.name, **env}
+        return subprocess.run(["sh", "-c", command], env=full, capture_output=True, text=True)
+
+    def test_core_check_fails_with_no_core_and_starts_none(self):
+        check = self.block_after("Core check, once per Cycle")
+        result = self.run_sh(check, XDG_RUNTIME_DIR=self.tmp.name, HC_SESSION="nocore")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertFalse(self.marker.exists(), "the core check ran hc")
+
+    def test_core_check_passes_when_the_core_socket_answers(self):
+        import socket
+        check = self.block_after("Core check, once per Cycle")
+        sock_dir = Path(self.tmp.name) / "herdr-core"
+        sock_dir.mkdir()
+        server = socket.socket(socket.AF_UNIX)
+        server.bind(str(sock_dir / "fixture.sock"))
+        server.listen(1)
+        try:
+            result = self.run_sh(check, XDG_RUNTIME_DIR=self.tmp.name, HC_SESSION="fixture")
+        finally:
+            server.close()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(self.marker.exists(), "the core check ran hc")
 
 
 class CoreIsAgentNeutralTest(unittest.TestCase):

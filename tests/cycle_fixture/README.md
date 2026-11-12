@@ -29,9 +29,9 @@ Each Cycle runs the command in the "How a Cycle starts" block of the example `ho
 11. **`no-remote`: the Local branch path in a repo with no remote.** The project repo has no `origin`. A Ready Build Task `noremote-file` reaches In Review as in scenario 1: a Tracker comment names the branch and has a `Checks:` line, the branch has a commit that is not in `main`, the Worker is closed, and the repo still has no remote.
 12. **`no-notifier`: a missing `notifier.md`.** The home directory has no `notifier.md`. `nonotify-file` is Blocked, the Owner was told, and the blocker has cleared. After one Cycle: the Task is back in Ready, the `unblocked` line is in `<home>/notifications.log`, there is no `system_alert` and no alert in `state.json`, and the Cycle log notes the missing `notifier.md`.
 13. **`untrusted`: a Follow-up from an untrusted author.** `untrusted-file` is In Review with a Task branch. A comment from the author `stranger` starts with `ACTION:`. One Cycle sends nothing, starts no Worker, makes no Workspace or branch, leaves the Task In Review, and names the skipped comment (`c2`, `stranger`) in the Cycle log.
-14. **`no-core`: no core runs (herdr-core only).** The fixture stops its core. `nocore-file` is Ready. After one Cycle: no core runs (the Orchestrator stopped the core that its first `hc` command started), there is one `system_alert` and a `runtime` alert in `state.json`, the Task file is unchanged, and there is no record, Workspace or branch. Then the fixture starts its core again.
+14. **`no-core`: no core runs (herdr-core only).** The fixture stops its core. `nocore-file` is Ready. Cycle 1 starts no core (the core check connects to the socket and runs no `hc` command), sends one `system_alert` and writes a `runtime` alert in `state.json`. Cycle 2 sends nothing and starts no core; the Task file is unchanged, and there is no record, Workspace or branch. The fixture starts its core again; Cycle 3 sends `system_recovered`, removes the alert and goes on with the Cycle (the Ready Task is spawned).
 
-Scenarios 3, 5, 6, 7, 8, 9 and 13 each check at least one Cycle where nothing changed: the Notifier log must not grow.
+Scenarios 3, 5, 6, 7, 8, 9, 13 and 14 each check at least one Cycle where nothing changed: the Notifier log must not grow.
 
 ## Run
 

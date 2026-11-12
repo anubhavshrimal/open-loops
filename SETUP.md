@@ -36,7 +36,7 @@ Check these without questions. Record what you find.
 | MCP servers | `claude mcp list`; for Codex, the `[mcp_servers]` tables in `~/.codex/config.toml` |
 | Are you a Host? | Are you a KiroCrew or OpenClaw agent, or did the Owner say "You are the Host"? Then that product is the Host. |
 | Existing setup | The notes files `<home>/{tracker,host,runtime,notifier,review}.md`, `<home>/state.json`, and a crontab line with "Run one Open Loops Cycle" (`crontab -l`) |
-| Runtime server | `hc server status` (a herdr-core core runs; this command starts a core when none runs, so if `uptime_ms` is below `5000` and `live` and `finished` are `0`, run `hc server stop` at once and record "no core"), `herdr agent list` (a Herdr server answers), `tmux ls` (a tmux server runs) |
+| Runtime server | the "Core check" command in [`runtime/herdr-core.md`](adapters/runtime/herdr-core.md) (exit 0: a herdr-core core runs; it starts no core, and any other `hc` command starts one, so run no `hc` command before it passes), `herdr agent list` (a Herdr server answers), `tmux ls` (a tmux server runs) |
 | Project repo | The git repo in the current directory, if any: its path, its `origin` remote (a GitHub repo?), its default branch, and hints for the build and test command (`Makefile`, `package.json` scripts, `pyproject.toml`, `Cargo.toml`, a CI file) |
 
 If the notes files exist, this is a re-run: go to "Re-run setup".
@@ -194,7 +194,7 @@ These are separate projects with their own licenses. They are downloaded to the 
 
 > **Warning:** from this step on, agents run unattended in the permission mode from step 3 (see the warning there). Start the Host only after the Owner says yes.
 
-1. Make sure that the Runtime server runs (step 1: the `hc server status` check, `herdr agent list` or `tmux ls`). If not, ask the Owner to start it from their own shell.
+1. Make sure that the Runtime server runs (step 1: the herdr-core "Core check", `herdr agent list` or `tmux ls`). If not, ask the Owner to start it from their own shell.
 2. Start the Host as `<home>/host.md` says in "How a Cycle starts":
    - **cron + `claude -p` or `codex exec`:** add the crontab line from `host.md`, with the `PATH=` line above it, only if no line with "Run one Open Loops Cycle" for this home directory is already there: `(crontab -l 2>/dev/null; cat <file with the two lines>) | crontab -`. Show the Owner `crontab -l` after.
    - **KiroCrew or OpenClaw:** create your own scheduled job with the command in `host.md`, and write its id into `host.md` ("How to stop and remove" uses it).

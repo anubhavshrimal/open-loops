@@ -6,15 +6,16 @@ Runtime: herdr-core (https://herdr.dev), the server behind the Herdr app, driven
 
 Core: the core must already run before a Cycle starts, started by the Owner from their own shell (`hc server start`, or open the Herdr app), never by the Orchestrator. A new terminal starts from the core's environment, not from the environment of the shell that runs `hc`, so a core that an agent's shell started passes that agent's sandbox and session variables to every Worker. Any `hc` command starts a core when none runs, so do the core check below before any other `hc` command.
 
-Core check, once per Cycle, before any other `hc` command:
+Core check, once per Cycle, before any other `hc` command. It connects to the core's socket, and it starts no core:
 
 ```sh
-hc server status --json
+python3 -c 'import os, socket; s = socket.socket(socket.AF_UNIX); s.connect(os.environ.get("HC_SOCKET") or os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/run/user/%d" % os.getuid(), "herdr-core", (os.environ.get("HC_SESSION") or "default") + ".sock"))'
 ```
 
-- If it returns an error, treat it as a Runtime tool failure.
-- If `uptime_ms` is below `5000`, `live` is `0` and `finished` is `0`, this command started a new core: the Owner's core does not run. Stop it at once with `hc server stop` (it has no terminals), and treat it as a Runtime tool failure. Run no other `hc` command in this Cycle.
-- Otherwise the Owner's core runs. Never run `hc server stop` or `hc server restart` on it.
+- Exit 0: the Owner's core runs. Go on with the `hc` commands below.
+- Any other exit: no core answers. Treat it as a Runtime tool failure, and run no `hc` command in this Cycle.
+- The socket is at `$XDG_RUNTIME_DIR/herdr-core/<session>.sock` (`/run/user/<uid>/...` when `XDG_RUNTIME_DIR` is not set, as in cron). If the Owner's core keeps it at another place, `hc` names both paths in its error text: set `HC_SOCKET` to the core's path in the Host's environment.
+- Never run `hc server start`, `hc server stop` or `hc server restart`.
 
 Agent: Claude Code (`claude`), interactive, in auto permission mode. For Codex, see "Codex agent". Give the agent as an absolute path, `"$(command -v claude)"`: the shell of the Orchestrator expands it to the path in its own `PATH`, and the core's `PATH` can be different.
 
