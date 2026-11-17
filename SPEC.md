@@ -13,6 +13,7 @@ The behavior lives in two prompts: [`core/orchestrator.md`](core/orchestrator.md
 | Exploration Worker agent | [`core/agents/auto-researcher.md`](core/agents/auto-researcher.md) | The agent that runs an Exploration Spec (`agent: auto-researcher`). |
 | State schema | [`core/state.schema.json`](core/state.schema.json) | The schema of `state.json`. |
 | Spec templates | [`core/templates/`](core/templates/) | The Build Spec and Exploration Spec templates. |
+| Change check runner (optional) | [`core/change-check.py`](core/change-check.py) | A script with no LLM that the Host can run in front of the Cycle. It starts a Cycle only when a signal changed (see section 4 and [`docs/cost-saver.md`](docs/cost-saver.md)). |
 | Slot Contracts and examples | [`adapters/<slot>/`](adapters/README.md) | Each Slot's Contract (its `README.md`) and example notes files. |
 | Setup | [`SETUP.md`](SETUP.md) | Instructions for the Owner's coding agent. |
 | Optional modules | [`modules/`](modules/) | capture, refine, wiki (with wiki-gardener). The core never needs them. |
@@ -24,6 +25,7 @@ The home directory (default `~/.openloops/`) persists between Cycles. It holds:
 - `state.json`: the state file. It is the only truth between Cycles.
 - `orchestrator.log`: the Cycle log, newest entry first, at most 500 entries.
 - Five notes files, one for each Slot: `tracker.md`, `host.md`, `runtime.md`, `notifier.md`, `review.md`.
+- Only with the Change check: `change-check.md` (its settings, Read commands, Auth probes and Send command, assembled by setup from the `<example>.change-check.md` parts in `adapters/`), `change-check.json` (its state), `change-check.log` (its log, one line for each Change check; the Owner can delete it at any time) and `change-check.lock`. The Orchestrator never reads or writes them.
 
 The Orchestrator reads all five notes files at the start of each Cycle, and uses only the tools they name for Slot work. Real values (IDs, paths, logins) are only in the home directory. The files in this repo hold `{{...}}` placeholders only.
 
@@ -74,6 +76,28 @@ A Cycle is one pass of the Orchestrator over the Tracker. The Host starts each C
 
 Step 1 comes before step 2, so that a completion in this Cycle clears a dependency gate in the same Cycle.
 
+### When a Cycle starts
+
+By default, the Host starts a Cycle at a fixed interval. With the optional Change check, the Host runs `core/change-check.py check` at a short interval instead, and the runner starts the Cycle with the Host's "Run one Cycle and return its result" command only when one of these is true:
+
+- **First:** there is no last Change marker.
+- **Changed:** the Change marker is not the last one. The Change marker is the hash of the output of every Read command in `change-check.md`, plus the hash of `core/orchestrator.md` and the five notes files.
+- **Failed Check:** the only change is in a read marked `Failed Checks only: yes` (a line in the Review System part), and its output is not empty. At most one such Cycle each Failed Check gap, unless the Safety Cycle is due.
+- **Error:** a Read command failed and its Auth probe passes. A timeout or a network error (TRANSIENT) starts no Cycle until it fails more than Transient Change checks times in a row. After that, and for any other error (UNKNOWN), at most one Cycle each Error gap.
+- **Safety:** the Safety Cycle is due: no Cycle exited 0 for that time. This time counts from the last Cycle that exited 0, on its own cadence: an AUTH problem never resets it.
+
+Other rules of the runner:
+
+- The marker of a Cycle becomes the last marker only when the Cycle command exits 0. A Cycle with any other exit, or one that stopped with no result, leaves the last marker as it was.
+- **Known limit:** exit 0 means that the Cycle's agent session ended, not that the Cycle did all its work. The runner never reads `state.json`. A Slot tool that fails during a Cycle makes the Cycle send an alert and skip that Slot's work, and the session still exits 0. Then the change that started the Cycle waits for the next change or the Safety Cycle. The Auth probes before each Cycle make a login failure unlikely, not impossible: a login can expire during a Cycle, and some Slots have no Auth probe.
+- **AUTH:** the runner runs every Auth probe before it starts a Cycle (not with a bad config: then it cannot read the probes). When the Auth probe of a Slot fails, no Cycle starts. Each Change check then runs only that Auth probe. When it passes, the runner does one full check. A Safety Cycle that comes due during an AUTH problem starts no Cycle then; it starts at the first Change check after the Auth probes pass.
+- **Repeat limit:** after a failed Cycle, no Cycle starts for the Retry gap. After Repeat limit failed Cycles in a row, no Cycle starts until the Change marker changes or the Safety Cycle. This applies to every reason above. A failed Cycle while an Auth probe fails counts as AUTH, not to the Repeat limit.
+- **Lock:** one Change check at a time. A Change check that finds the lock taken does nothing. The runner holds the lock only while it reads, decides and records, never while a Cycle runs, so a process that a Cycle leaves running cannot hold it. The pending entry keeps the process id of the Cycle: while that process runs, each Change check starts no Cycle (BUSY). When it is gone with no recorded result, the Cycle counts as lost (failed).
+- **Fail open, with a limit:** if `change-check.md` is missing, a setting is missing or wrong, it has no Read command, or two Read commands have the same id, the runner starts one Cycle each 6 Change checks (with the example check every 5 minutes: each 30 minutes, the default interval). It sends one `system_alert` "Change check config is bad: <reason>", and one `system_recovered` when the config is good again.
+- **Alerts:** an AUTH, TRANSIENT, UNKNOWN, Repeat limit or config problem, or a Cycle that runs longer than the Safety Cycle (BUSY), sends one `system_alert` when it starts, a reminder each Reminder (not for a config problem: the Reminder setting can be the bad one), and one `system_recovered` when it ends. They go through the Notifier's Send command, or only to `change-check.log` when the Notifier has none.
+
+The Cycle itself is the same with or without the Change check.
+
 ## 5. Specs
 
 - Each Task points to exactly one Spec: a **Build Spec** (has `## Acceptance Criteria`) or an **Exploration Spec** (has `## Hypothesis`, a success metric and a time budget).
@@ -100,7 +124,7 @@ Step 1 comes before step 2, so that a completion in this Cycle clears a dependen
 
 ## 8. Slot Contracts
 
-Each Slot's `adapters/<slot>/README.md` holds the same Contract, a Contract map for each example notes file, and the examples. A tool with no example is fine: write its notes file against the Contract, one item at a time.
+Each Slot's `adapters/<slot>/README.md` holds the same Contract, a Contract map for each example notes file, and the examples. The items marked "Optional, for the Change check" are only for the Owner who chose the Change check; each example has them in its `<example>.change-check.md` part, not in its notes file. A tool with no example is fine: write its notes file against the Contract, one item at a time.
 
 ### Tracker
 
@@ -115,6 +139,8 @@ The Tracker stores Tasks and their states. A Tracker must let the Orchestrator a
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
 - [ ] Create a child Task under a Task.
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 `tracker.md` holds the tools for each capability, the map from the six states to the native names, the IDs, the Follow-up prefix (default `ACTION:`), the AI disclosure line (default off), and the quirks of the tool. Rules for every Tracker: the Spec location and spawn fields of section 5; only leaf Tasks spawn; a dependency is resolved only when the upstream Task is Done (`tracker.md` says if a closed Task counts as Done); whether a Follow-up is fulfilled is the Orchestrator's judgment. Examples: [GitHub Issues](adapters/tracker/github-issues.md) (default), [Markdown files](adapters/tracker/markdown.md) (fallback).
 
@@ -126,6 +152,9 @@ The Host starts the Orchestrator on a schedule. A Host must:
 - [ ] Keep a home directory that persists between Cycles.
 - [ ] Give the Orchestrator the Owner's tools for the other Slots, plus a shell.
 - [ ] Run with no permission prompts (auto or bypass permission mode).
+- [ ] Optional, for the Change check: run one Cycle and return its result, with one command that waits for the Cycle's agent session, ends a hung Cycle, and exits with the session's exit code.
+- [ ] Optional, for the Change check: run a command with no agent on a schedule.
+- [ ] Optional, for the Change check: the Settings of `change-check.md`: Safety Cycle, Error gap, Failed Check gap, Retry gap, Repeat limit, Transient Change checks, Reminder, Read timeout
 
 `host.md` fields:
 
@@ -157,6 +186,8 @@ The Runtime spawns, watches and stops Workers. A Runtime must supply all five:
 - [ ] The Runtime ids to store in `state.json`.
 - [ ] Whether the Runtime makes worktrees itself. If not, the core makes each Workspace as a plain git worktree at `<repo>/.openloops/worktrees/<slug>`.
 - [ ] The cap on live Workers (default 5).
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 Rules for every Runtime: Worker names are `ol-<slug>`; a Workspace is never force-overwritten; Workers run in auto or bypass permission mode. Examples: [herdr-core](adapters/runtime/herdr-core.md) (recommended), [Herdr TUI](adapters/runtime/herdr.md), [tmux](adapters/runtime/tmux.md) (fallback), each with Claude Code or Codex.
 
@@ -165,6 +196,7 @@ Rules for every Runtime: Worker names are `ol-<slug>`; a Workspace is never forc
 The Notifier delivers messages to the Owner. A Notifier must:
 
 - [ ] Send one text message to the Owner.
+- [ ] Optional, for the Change check: send one message with a shell command and no agent, in the Notifier part of `change-check.md` (the event in `$OL_EVENT`, the text in `$OL_MESSAGE`).
 
 Events: `spawned`, `respawned` (with its trigger: comments, failed check, both, or follow-up), `input_requested`, `blocked`, `in_review`, `done`, `unblocked`, `system_alert`, `system_recovered`. With the wiki module, wiki-gardener also sends `wiki_gardener`. There is one Notifier. It only sends, and never reads replies. Messages give file paths, with no link base. Example: [log file](adapters/notifier/log-file.md) (default). The Host's own messaging (KiroCrew, OpenClaw) or a messaging MCP server can fill the Slot (see [`adapters/notifier/README.md`](adapters/notifier/README.md)).
 
@@ -195,6 +227,8 @@ The Orchestrator must be able to:
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 Triggers: a new Review comment or a failed Check → Respawn; approved or merged → Done; closed without merge → Done. Setup makes no repo settings or rulesets. Examples: [GitHub PR](adapters/review/github-pr.md) (default), [Local branch](adapters/review/local-branch.md) (fallback). In the Local branch Review System, the PR is the Task branch, Review comments are Tracker comments with the Follow-up prefix, the Checks are the build and test command that the Worker runs, and Done is a merge of the branch into `main` or the Owner's move to Done.
 
@@ -230,7 +264,8 @@ Triggers: a new Review comment or a failed Check → Respawn; approved or merged
 14. The Orchestrator runs only shell commands that never wait for input.
 15. Every Cycle adds one entry at the top of `orchestrator.log` and keeps every earlier entry (up to 500).
 16. Only a comment from a trusted author (the Owner, or a user with write access) can start a Worker or reach a Worker as an instruction. Other comments, also from bots, are logged and skipped.
+17. The Change check is optional, and uses no LLM. It writes only its own three files, never `state.json` and never a Slot. Its Read commands and Auth probes only read. When the reads and the Auth probes work, it starts a Cycle at least once each Safety Cycle (a Retry gap can delay it). The Safety Cycle time counts from the last Cycle that exited 0 and does not depend on a login recovery: a Safety Cycle that comes due during an AUTH problem starts at the first Change check after it. Its settings and commands live only in `change-check.md`, which the Orchestrator never reads. It never reads `state.json`.
 
 ## 12. Tests
 
-The Cycle fixture in [`tests/cycle_fixture/`](tests/cycle_fixture/README.md) runs real Cycles in a sandbox with the local fallbacks and the recommended Runtime, and checks only external results: Task files, `state.json`, git branches, the Cycle log and the Notifier log. Its offline checks also verify that each Slot Contract in this file is the same as in `adapters/<slot>/README.md`.
+The Cycle fixture in [`tests/cycle_fixture/`](tests/cycle_fixture/README.md) runs real Cycles in a sandbox with the local fallbacks and the recommended Runtime, and checks only external results: Task files, `state.json`, git branches, the Cycle log and the Notifier log. Its offline checks also verify that each Slot Contract in this file is the same as in `adapters/<slot>/README.md`, and test the Change check runner with a fake home directory and fake Read commands (`tests/cycle_fixture/test_change_check.py`).

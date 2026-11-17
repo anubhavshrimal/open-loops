@@ -5,6 +5,7 @@ The Notifier delivers messages to the Owner. There is one Notifier.
 ## Contract
 
 - [ ] Send one text message to the Owner.
+- [ ] Optional, for the Change check: send one message with a shell command and no agent, in the Notifier part of `change-check.md` (the event in `$OL_EVENT`, the text in `$OL_MESSAGE`).
 
 The core sends one message for each of these events: `spawned`, `respawned` (with its trigger), `input_requested`, `blocked`, `in_review`, `done`, `unblocked`, `system_alert`, `system_recovered`. Dedup and silence are core rules, not Notifier rules: the core sends no message when nothing happened, and never the same message twice. A send failure is logged in `orchestrator.log` and never stops the Cycle. With the wiki module, wiki-gardener also sends one `wiki_gardener` message for each proposal (see `modules/wiki/gardener/lint.md`). Messages give file paths, with no link base.
 
@@ -30,3 +31,13 @@ Either way, the Notifier only sends. It never reads replies: the Owner answers t
 | Capability | Line in `log-file.md` |
 |---|---|
 | Send one text message | "Send one message" |
+
+## Change check parts
+
+Only with the Change check (see [`docs/cost-saver.md`](../../docs/cost-saver.md)). Each example notes file has a part of `<home>/change-check.md` next to it, named `<example>.change-check.md`: [`log-file.change-check.md`](log-file.change-check.md). Setup copies the part into `<home>/change-check.md` only when the Owner says yes to the cost saver. The Orchestrator never reads it.
+
+## Contract map: `log-file.change-check.md`
+
+| Capability | Line in `log-file.change-check.md` |
+|---|---|
+| Send with a shell command (optional) | "## Notifier", "### Send" |

@@ -8,6 +8,9 @@ The Host starts the Orchestrator on a schedule. The Host, the Runtime and the Wo
 - [ ] Keep a home directory that persists between Cycles.
 - [ ] Give the Orchestrator the Owner's tools for the other Slots, plus a shell.
 - [ ] Run with no permission prompts (auto or bypass permission mode).
+- [ ] Optional, for the Change check: run one Cycle and return its result, with one command that waits for the Cycle's agent session, ends a hung Cycle, and exits with the session's exit code.
+- [ ] Optional, for the Change check: run a command with no agent on a schedule.
+- [ ] Optional, for the Change check: the Settings of `change-check.md`: Safety Cycle, Error gap, Failed Check gap, Retry gap, Repeat limit, Transient Change checks, Reminder, Read timeout
 
 `host.md` fields:
 
@@ -91,3 +94,35 @@ With the optional wiki module, the Host runs one more scheduled job: the wiki ga
 | Interval | "Interval" line, `--cron "*/30 * * * *"` |
 | Model and effort | "Orchestrator model" line, `--thinking {{ORCHESTRATOR_EFFORT}}` |
 | How to stop and remove | "How to stop and remove": `openclaw automations disable <id>`, `openclaw automations remove <id>` |
+
+## Change check parts
+
+Only with the Change check (see [`docs/cost-saver.md`](../../docs/cost-saver.md)). Each example notes file has a part of `<home>/change-check.md` next to it, named `<example>.change-check.md`: [`cron-claude.change-check.md`](cron-claude.change-check.md), [`cron-codex.change-check.md`](cron-codex.change-check.md), [`kirocrew.change-check.md`](kirocrew.change-check.md), [`openclaw.change-check.md`](openclaw.change-check.md). Setup copies the part into `<home>/change-check.md` only when the Owner says yes to the cost saver. The Orchestrator never reads it.
+
+## Contract map: `cron-claude.change-check.md`
+
+| Capability | Line in `cron-claude.change-check.md` |
+|---|---|
+| Run one Cycle and return its result (optional) | "## Host": "Run one Cycle and return its result" |
+| Run a command with no agent on a schedule (optional) | "## Host": `change-check.py check` crontab line |
+| Settings of `change-check.md` (optional) | "## Settings" list |
+
+## Contract map: `cron-codex.change-check.md`
+
+| Capability | Line in `cron-codex.change-check.md` |
+|---|---|
+| Run one Cycle and return its result (optional) | "## Host": "Run one Cycle and return its result" |
+| Run a command with no agent on a schedule (optional) | "## Host": `change-check.py check` crontab line |
+| Settings of `change-check.md` (optional) | "## Settings" list |
+
+## Contract map: `kirocrew.change-check.md`
+
+| Capability | Line in `kirocrew.change-check.md` |
+|---|---|
+| Run one Cycle and return its result (optional) | "Run one Cycle and return its result: not available" |
+
+## Contract map: `openclaw.change-check.md`
+
+| Capability | Line in `openclaw.change-check.md` |
+|---|---|
+| Run one Cycle and return its result (optional) | "Run one Cycle and return its result: not available" |

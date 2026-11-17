@@ -27,6 +27,8 @@ The Orchestrator must be able to:
 - [ ] The form of a PR reference in Tracker comments.
 - [ ] The review skill the Worker runs before it opens the PR (default: `code-review` from mattpocock/skills).
 - [ ] The build and test command of each project.
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 Triggers the core applies to every Review System: a new Review comment or a failed Check → Respawn; approved or merged → Done; closed without merge → Done. Setup makes no repo settings or rulesets. No agent ever merges.
 
@@ -77,3 +79,20 @@ Triggers the core applies to every Review System: a new Review comment or a fail
 | PR reference | Worker capabilities: "PR reference" |
 | Review skill | "Review skill" line |
 | Build and test command | "Projects" table |
+
+## Change check parts
+
+Only with the Change check (see [`docs/cost-saver.md`](../../docs/cost-saver.md)). Each example notes file has a part of `<home>/change-check.md` next to it, named `<example>.change-check.md`: [`github-pr.change-check.md`](github-pr.change-check.md), [`local-branch.change-check.md`](local-branch.change-check.md). Setup copies the part into `<home>/change-check.md` only when the Owner says yes to the cost saver. The Orchestrator never reads it.
+
+## Contract map: `github-pr.change-check.md`
+
+| Capability | Line in `github-pr.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Review System", "### Read: prs", "### Read: checks" |
+| Auth probe (optional) | "### Auth probe" |
+
+## Contract map: `local-branch.change-check.md`
+
+| Capability | Line in `local-branch.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Review System", "### Read: branches" |

@@ -221,6 +221,11 @@ class SetupDocTest(unittest.TestCase):
         self.assertIn("adapters/runtime/herdr-core.md", row)
         self.assertIn("Core check, once per Cycle", (REPO / "adapters/runtime/herdr-core.md").read_text())
 
+    def test_step_3_skips_the_optional_change_check_items(self):
+        text = (REPO / "SETUP.md").read_text()
+        step3 = text.split("## 3. Choose a tool for each Slot", 1)[1].split("\n## ", 1)[0]
+        self.assertIn('Skip the items marked "Optional, for the Change check"', step3)
+
     def test_every_example_notes_file_it_names_exists(self):
         text = (REPO / "SETUP.md").read_text()
         for link in re.findall(r"\]\(([^)#]+)\)", text):

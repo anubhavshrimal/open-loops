@@ -50,7 +50,7 @@ Show the Owner a short table: each finding, and what it means for each Slot (for
 Ask about the Slots in this order, one at a time. For each Slot:
 
 1. Recommend a tool: the default, or the fallback if the default cannot work on this machine (step 1 tells you). Name the other examples.
-2. When the Owner picks a tool, read the Contract in `<clone>/adapters/<slot>/README.md` and its Contract map for that example. Check each capability on this machine. Report each gap, with a fix or another tool. A tool with no example notes file is allowed: then write its notes file with the Owner, one Contract item at a time.
+2. When the Owner picks a tool, read the Contract in `<clone>/adapters/<slot>/README.md` and its Contract map for that example. Check each capability on this machine. Report each gap, with a fix or another tool. Skip the items marked "Optional, for the Change check": they are only for the optional Change check (`SPEC.md` section 4). A tool with no example notes file is allowed: then write its notes file with the Owner, one Contract item at a time.
 3. Collect the values for the `{{...}}` placeholders of that example notes file.
 
 | Slot | Default | Fallback and other examples | Placeholders to fill |
@@ -152,6 +152,8 @@ On "yes":
    | `<home>/runtime.md` | the chosen `adapters/runtime/*.md` |
    | `<home>/notifier.md` | the chosen `adapters/notifier/*.md` |
    | `<home>/review.md` | the chosen `adapters/review/*.md` |
+
+   Copy the example notes file only. Its `<example>.change-check.md` part next to it is not a notes file: only the optional Change check uses it.
 
 3. Edit the copies for the Owner's answers that are not placeholders: a Follow-up prefix other than `ACTION:` (in `tracker.md`; it is the same prefix everywhere), an interval other than 30 minutes (in `host.md`: the cron schedule, the "Interval" line, and the `timeout`, which stays the interval minus 5 minutes), `ready` instead of `draft` or `amend` instead of `new commits` (in `review.md`), a cap other than 5 (in `runtime.md`), the "Codex agent" command if the Workers run Codex. Without the wiki module, delete the "Second job: wiki-gardener" section and its line in "How to stop and remove" from `host.md`.
 4. Check that no placeholder is left: `grep -n '{{' <home>/*.md` prints nothing.
