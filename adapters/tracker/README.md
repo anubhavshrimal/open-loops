@@ -15,6 +15,8 @@ A Tracker must let the Orchestrator and the Worker:
 - [ ] Post a comment on a Task.
 - [ ] Change a Task's state.
 - [ ] Create a child Task under a Task.
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 `tracker.md` holds the tools for each capability, the map from the six core states (Backlog, Ready, Working, Blocked, In Review, Done) to the native names, the IDs, the Follow-up prefix, the AI disclosure line (`AI disclosure: off | <text>`, default off), and the quirks of the tool.
 
@@ -66,3 +68,20 @@ Rules that the core applies to every Tracker:
 | Map of the six states | "States" table |
 | Follow-up prefix | "Follow-up prefix" line |
 | AI disclosure | "AI disclosure" line |
+
+## Change check parts
+
+Only with the Change check (see [`docs/cost-saver.md`](../../docs/cost-saver.md)). Each example notes file has a part of `<home>/change-check.md` next to it, named `<example>.change-check.md`: [`github-issues.change-check.md`](github-issues.change-check.md), [`markdown.change-check.md`](markdown.change-check.md). Setup copies the part into `<home>/change-check.md` only when the Owner says yes to the cost saver. The Orchestrator never reads it.
+
+## Contract map: `github-issues.change-check.md`
+
+| Capability | Line in `github-issues.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Tracker", "### Read: tasks" |
+| Auth probe (optional) | "### Auth probe" |
+
+## Contract map: `markdown.change-check.md`
+
+| Capability | Line in `markdown.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Tracker", "### Read: tasks" |

@@ -39,6 +39,7 @@ The agent follows [`SETUP.md`](../SETUP.md). It clones the repo to `~/.openloops
 | Review System | GitHub PR, opened as a draft | Local branch: the Task branch is the PR |
 | Project | the repo in the current directory, its build and test command, Follow-up prefix `ACTION:` | the same |
 | Modules | capture, refine, wiki: one yes/no each, default no | the same |
+| Cost saver | no: the fixed interval stays (yes: see [`cost-saver.md`](cost-saver.md)) | the same |
 
 To try Open Loops on one machine with no account, say "use the local fallbacks for every Slot".
 

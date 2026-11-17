@@ -144,6 +144,7 @@ In the order you need them:
 | Know what your agent does during setup | [`SETUP.md`](SETUP.md) |
 | Write a Spec | [`core/templates/build-spec.md`](core/templates/build-spec.md), [`core/templates/exploration-spec.md`](core/templates/exploration-spec.md), [`examples/`](examples/README.md) |
 | Fix a problem | [`docs/troubleshooting.md`](docs/troubleshooting.md) |
+| Check if you can save cost (optional) | [`docs/cost-saver.md`](docs/cost-saver.md) |
 | Learn the words | [`GLOSSARY.md`](GLOSSARY.md) |
 | Know the states, Contracts and invariants | [`SPEC.md`](SPEC.md) |
 | Write a notes file for your own tool | [`adapters/README.md`](adapters/README.md) |

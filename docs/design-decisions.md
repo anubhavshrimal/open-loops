@@ -25,6 +25,9 @@ Why Open Loops works the way it does. Each entry gives the decision and the reas
 **No special rules for overlapping Cycles, missed Cycles or pause.**
 *Why:* the check for a live Worker before each spawn already stops double spawns. The crontab examples wrap each Cycle in `timeout <interval minus 5 minutes>`, so Cycles cannot pile up. To pause, the Owner stops the schedule. Each extra mechanism (a lock file, a watchdog, a pause file) would be one more thing to break and debug.
 
+**The Change check is optional, and it is a script in front of the Cycle, not a part of the Cycle.**
+*Why:* most Cycles find nothing to do, and each one costs a full agent session. A script with no LLM can tell from the Read commands that nothing changed, for no tokens. It stays out of the prompt, so the Cycle is the same with or without it. It has its own lock, and it keeps the process id of the running Cycle, because it runs every few minutes and a Cycle can take longer. Its commands live in its own file, `change-check.md`, so the Orchestrator never reads them and a Cycle costs the same. It fails open with a limit (a bad config starts one Cycle each 6 Change checks, with one alert), and it starts a Safety Cycle at least every few hours, so a signal that no Read command sees is late, not lost. The fixed interval stays the default, because the gain depends on the Owner's Slots and load: [`cost-saver.md`](cost-saver.md) measures it first.
+
 ## Workers
 
 **Workers are interactive agents in a Runtime with terminal panes (herdr-core, Herdr or tmux), not headless runs.**

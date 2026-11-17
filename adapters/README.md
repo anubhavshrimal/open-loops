@@ -10,4 +10,4 @@ An Adapter is the Owner's own tools for one Slot, plus the notes file that tells
 | Notifier | `notifier.md` | [notifier/README.md](notifier/README.md) | [log file](notifier/log-file.md) |
 | Review System | `review.md` | [review/README.md](review/README.md) | [GitHub PR](review/github-pr.md) (default), [Local branch](review/local-branch.md) (fallback) |
 
-To use an example, copy it into the Open Loops home directory (default `~/.openloops/`) under the notes file name, and replace each `{{...}}` placeholder with your own value. The Orchestrator reads the five notes files at the start of each Cycle.
+To use an example, copy it into the Open Loops home directory (default `~/.openloops/`) under the notes file name, and replace each `{{...}}` placeholder with your own value. The Orchestrator reads the five notes files at the start of each Cycle. Each example also has a `<example>.change-check.md` part next to it: it is not a notes file, and only the optional Change check uses it (see [`docs/cost-saver.md`](../docs/cost-saver.md)).

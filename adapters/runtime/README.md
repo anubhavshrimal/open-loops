@@ -20,6 +20,8 @@ A Runtime must supply all five:
 - [ ] The Runtime ids to store in `state.json`.
 - [ ] Whether the Runtime makes worktrees itself. If not, the core makes each Workspace as a plain git worktree at `<repo>/.openloops/worktrees/<slug>`.
 - [ ] The cap on live Workers (default 5).
+- [ ] Optional, for the Change check: give Read commands, in the Slot's part of `change-check.md`, that print with no LLM and no write the signals that the Orchestrator acts on, and only those.
+- [ ] Optional, for the Change check: give an Auth probe in the same part, a cheap command that fails only when the login fails.
 
 Rules that the core applies to every Runtime: Worker names are `ol-<slug>`; a Workspace is never force-overwritten; Workers run in auto or bypass permission mode.
 
@@ -82,3 +84,25 @@ Each example starts Claude Code Workers, and its "Codex agent" section gives the
 | Runtime ids | "Runtime ids to store in `state.json`" |
 | Worktrees | "hc does not make worktrees" |
 | Cap | "Cap on live Workers" line |
+
+## Change check parts
+
+Only with the Change check (see [`docs/cost-saver.md`](../../docs/cost-saver.md)). Each example notes file has a part of `<home>/change-check.md` next to it, named `<example>.change-check.md`: [`herdr-core.change-check.md`](herdr-core.change-check.md), [`herdr.change-check.md`](herdr.change-check.md), [`tmux.change-check.md`](tmux.change-check.md). Setup copies the part into `<home>/change-check.md` only when the Owner says yes to the cost saver. The Orchestrator never reads it.
+
+## Contract map: `herdr-core.change-check.md`
+
+| Capability | Line in `herdr-core.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Runtime", "### Read: workers" |
+
+## Contract map: `herdr.change-check.md`
+
+| Capability | Line in `herdr.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Runtime", "### Read: workers" |
+
+## Contract map: `tmux.change-check.md`
+
+| Capability | Line in `tmux.change-check.md` |
+|---|---|
+| Read commands (optional) | "## Runtime", "### Read: workers" |

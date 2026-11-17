@@ -158,6 +158,48 @@ _Avoid_: channel, alerter
 The Slot that holds PRs, Review comments and Checks.
 _Avoid_: code review tool, CR system
 
+## Change check
+
+**Change check**:
+The optional script with no LLM (`core/change-check.py`) that the Host runs at a short interval; it starts a Cycle only when a signal changed, a read failed, or the Safety Cycle is due.
+_Avoid_: gate, pre-check, tick, poller
+
+**Read command**:
+A shell command in `change-check.md` that prints, with no LLM and no write, the signals that the Orchestrator acts on.
+_Avoid_: probe, snapshot script, query
+
+**Auth probe**:
+A cheap shell command in `change-check.md` that fails only when the login to that Slot fails.
+_Avoid_: health check, login check
+
+**Change marker**:
+The hash of the output of every Read command plus the hash of the Orchestrator prompt and the five notes files.
+_Avoid_: fingerprint, checksum, digest
+
+**Safety Cycle**:
+The Cycle that the Change check starts when no Cycle exited 0 for the Safety Cycle time, with or without a change.
+_Avoid_: heartbeat, forced run, keepalive
+
+**Repeat limit**:
+The number of failed Cycles (exit not 0) in a row after which the Change check starts no Cycle until the Change marker changes or the Safety Cycle.
+_Avoid_: circuit breaker, retry cap, backoff
+
+**Retry gap**:
+The time after a failed Cycle in which the Change check starts no Cycle.
+_Avoid_: cooldown, backoff
+
+**Error gap**:
+The shortest time between two Cycles that the Change check starts because a Read command fails.
+_Avoid_: error cooldown, error cap
+
+**Failed Check gap**:
+The shortest time between two Cycles that the Change check starts only because a failed Check changed.
+_Avoid_: CI cooldown, check throttle
+
+**Transient Change checks**:
+The number of Change checks in a row with a timeout or a network error that start no Cycle.
+_Avoid_: retries, grace ticks, Transient checks
+
 ## Modules
 
 **Idea Forge**:
