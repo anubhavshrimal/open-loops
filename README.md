@@ -25,7 +25,7 @@ Open Loops takes Tasks from your Tracker and gives each one to a coding-agent Wo
 - **It runs on your machine,** with your tools for each Slot. Nothing runs on a server of this project.
 
 > [!WARNING]
-> **Preview (v0.1).** The agents run unattended, with your logins. Use a machine or account that holds only what Open Loops needs, and read [Safety](#safety) first.
+> **Preview (v0.2).** The agents run unattended, with your logins. Use a machine or account that holds only what Open Loops needs, and read [Safety](#safety) first.
 
 ## Quick start
 
