@@ -50,7 +50,7 @@ Show the Owner a short table: each finding, and what it means for each Slot (for
 Ask about the Slots in this order, one at a time. For each Slot:
 
 1. Recommend a tool: the default, or the fallback if the default cannot work on this machine (step 1 tells you). Name the other examples.
-2. When the Owner picks a tool, read the Contract in `<clone>/adapters/<slot>/README.md` and its Contract map for that example. Check each capability on this machine. Report each gap, with a fix or another tool. Skip the items marked "Optional, for the Change check": they are only for the optional Change check (`SPEC.md` section 4). A tool with no example notes file is allowed: then write its notes file with the Owner, one Contract item at a time.
+2. When the Owner picks a tool, read the Contract in `<clone>/adapters/<slot>/README.md` and its Contract map for that example. Check each capability on this machine. Report each gap, with a fix or another tool. Skip the items marked "Optional, for the Change check": [`docs/cost-saver.md`](docs/cost-saver.md) checks them only when the Owner says yes to the cost saver in step 9. A tool with no example notes file is allowed: then write its notes file with the Owner, one Contract item at a time.
 3. Collect the values for the `{{...}}` placeholders of that example notes file.
 
 | Slot | Default | Fallback and other examples | Placeholders to fill |
@@ -153,7 +153,7 @@ On "yes":
    | `<home>/notifier.md` | the chosen `adapters/notifier/*.md` |
    | `<home>/review.md` | the chosen `adapters/review/*.md` |
 
-   Copy the example notes file only. Its `<example>.change-check.md` part next to it is not a notes file: only the optional Change check uses it.
+   Copy the example notes file only. Its `<example>.change-check.md` part next to it is not a notes file: step 9 uses it only for the cost saver.
 
 3. Edit the copies for the Owner's answers that are not placeholders: a Follow-up prefix other than `ACTION:` (in `tracker.md`; it is the same prefix everywhere), an interval other than 30 minutes (in `host.md`: the cron schedule, the "Interval" line, and the `timeout`, which stays the interval minus 5 minutes), `ready` instead of `draft` or `amend` instead of `new commits` (in `review.md`), a cap other than 5 (in `runtime.md`), the "Codex agent" command if the Workers run Codex. Without the wiki module, delete the "Second job: wiki-gardener" section and its line in "How to stop and remove" from `host.md`.
 4. Check that no placeholder is left: `grep -n '{{' <home>/*.md` prints nothing.
@@ -216,13 +216,20 @@ The sample Build Task asks a Worker to add `hello.txt` to the project repo on th
 
 If the Task does not reach In Review, read `<home>/orchestrator.log`, `<home>/host.log` and the Notifier, and fix the notes file of the Slot that failed.
 
+### Cost saver (optional)
+
+Ask one yes/no question, default no: "Do you want me to check if you can save cost?" Explain it in one sentence: a script with no LLM can start a Cycle only when something changed, in place of a Cycle at each interval.
+
+- With no: change nothing. The Host keeps the fixed interval of step 8. Make no `<home>/change-check.md`.
+- With yes: follow [`docs/cost-saver.md`](docs/cost-saver.md). It assembles `<home>/change-check.md` from the `<example>.change-check.md` parts, tests it, measures, gives one recommendation, and changes the crontab line (or the Host's job) only with the Owner's yes. When the check is not a fit, the fixed interval stays.
+
 ## Re-run setup
 
 When the notes files exist:
 
 1. Read them all, and show the Owner the current tool and values for each Slot and project.
 2. Ask what to change. Change only that: edit only the lines of that notes file (or the Slot's whole file, if the Owner picks another tool for it). Keep every other file and line as it is. Never touch `state.json` or the Workspaces.
-3. Do only the steps that the change needs: for example step 7 if a new agent needs the skills, the module's steps of step 5 if the Owner turns a module on, step 8 if the interval or the Host changed (replace the old crontab line or scheduled job; never leave two).
+3. Do only the steps that the change needs: for example step 7 if a new agent needs the skills, the module's steps of step 5 if the Owner turns a module on, step 8 if the interval or the Host changed (replace the old crontab line or scheduled job; never leave two). If the Owner asks to save cost, do the "Cost saver (optional)" step of step 9. If `<home>/change-check.md` exists and a Slot tool or a value changed, build that Slot's section of it again ([`docs/cost-saver.md`](docs/cost-saver.md) step 2) and run its test (step 3).
 
 ## Stop and remove
 

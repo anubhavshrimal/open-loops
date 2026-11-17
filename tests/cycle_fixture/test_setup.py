@@ -226,6 +226,19 @@ class SetupDocTest(unittest.TestCase):
         step3 = text.split("## 3. Choose a tool for each Slot", 1)[1].split("\n## ", 1)[0]
         self.assertIn('Skip the items marked "Optional, for the Change check"', step3)
 
+    def test_cost_saver_is_one_optional_question_with_default_no(self):
+        # The fixed interval stays unless the Owner says yes and docs/cost-saver.md finds the Change check a fit.
+        text = (REPO / "SETUP.md").read_text()
+        step = text.split("### Cost saver (optional)", 1)[1].split("\n## ", 1)[0]
+        self.assertGreater(text.find("### Cost saver (optional)"), text.find("## 9. Verify with the sample Task"))
+        self.assertIn('Ask one yes/no question, default no: "Do you want me to check if you can save cost?"', step)
+        self.assertIn("With no: change nothing. The Host keeps the fixed interval", step)
+        self.assertIn("(docs/cost-saver.md)", step)
+        self.assertIn("When the check is not a fit, the fixed interval stays.", step)
+        recipe = (REPO / "docs" / "cost-saver.md").read_text()
+        self.assertIn('"Keep the scheduled Orchestrator"', recipe)
+        self.assertIn("Change nothing until the Owner says yes.", recipe)
+
     def test_every_example_notes_file_it_names_exists(self):
         text = (REPO / "SETUP.md").read_text()
         for link in re.findall(r"\]\(([^)#]+)\)", text):
