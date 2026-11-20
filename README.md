@@ -24,6 +24,11 @@ Open Loops takes Tasks from your Tracker and gives each one to a coding-agent Wo
 - **Only trusted comments count.** A Review comment or Follow-up acts only if it comes from you or a user with write access. Comments from bots and other people are skipped.
 - **It runs on your machine,** with your tools for each Slot. Nothing runs on a server of this project.
 
+<p align="center">
+  <a href="https://youtu.be/BWgLZJAIL9A"><img src="assets/tour-video.jpg" width="560" alt="Watch the guided tour on YouTube: one night with Open Loops, 2 minutes 38 seconds"></a><br>
+  <sub>▶ <a href="https://youtu.be/BWgLZJAIL9A">Watch one night with Open Loops</a> (2:38), or step through the <a href="https://anubhavshrimal.github.io/open-loops/tour.html">interactive tour</a> at your own pace.</sub>
+</p>
+
 > [!WARNING]
 > **Preview (v0.2).** The agents run unattended, with your logins. Use a machine or account that holds only what Open Loops needs, and read [Safety](#safety) first.
 
