@@ -23,6 +23,7 @@ Read this before you change anything in Open Loops. It is for people and coding 
 | The setup flow | [`SETUP.md`](SETUP.md) | `tests/cycle_fixture/test_setup.py` |
 | A Spec template | [`core/templates/`](core/templates/) | `SPEC.md` section 5, `modules/wiki/` if it copies the template |
 | The README first screen | [`README.md`](README.md) | keep install and verify before any long text |
+| The public site | [`site/`](site/) | [`tests/cycle_fixture/test_site.py`](tests/cycle_fixture/test_site.py); the deploy layout in [`.github/workflows/pages.yml`](.github/workflows/pages.yml) |
 
 ## Style of the docs and prompts
 
