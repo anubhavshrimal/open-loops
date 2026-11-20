@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- The Open Loops home page. Light and dark follow the system setting.
+     Deploy layout: the files of site/ plus the repo's assets/ folder (see .github/workflows/pages.yml). -->
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Open Loops — Specs in, reviewed PRs out</title>
+<meta name="description" content="Open Loops runs coding agents on your Tasks while you write the next Spec. Workers open PRs, read your Review comments and never merge.">
+<link rel="icon" type="image/png" href="assets/wick-sticker-96.png">
+<style>
+:root{--ink:#16181d;--mute:#5b6270;--line:#e3e5ea;--bg:#fbfaf7;--card:#fff;--teal:#0f9d8a;--amber:#f2a33a;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;--sans:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+@media (prefers-color-scheme:dark){:root{--ink:#e8ebf0;--mute:#9aa3b2;--line:#262b33;--bg:#0f1115;--card:#161a20;--teal:#35c2ad}}
+*{box-sizing:border-box}body{margin:0;font:16px/1.55 var(--sans);color:var(--ink);background:var(--bg)}
+a{color:inherit}code{font-family:var(--mono);font-size:.9em}img{max-width:100%;display:block}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 0}
+nav a{margin-left:22px;text-decoration:none;color:var(--mute);font-size:15px}nav a:hover{color:var(--ink)}
+.hero{text-align:center;padding:48px 0 24px}
+h1{font-size:56px;line-height:1.05;letter-spacing:-.02em;margin:18px 0 12px}
+.tag{font-size:20px;color:var(--mute);max-width:660px;margin:0 auto 26px}
+.rot{display:inline-block;height:1.55em;overflow:hidden;vertical-align:bottom;color:var(--teal);font-weight:600}
+.rot span{display:block;animation:rot 12s infinite}
+@keyframes rot{0%,20%{transform:translateY(0)}25%,45%{transform:translateY(-100%)}50%,70%{transform:translateY(-200%)}75%,95%{transform:translateY(-300%)}}
+@media (prefers-reduced-motion:reduce){.rot span{animation:none}}
+.term{background:#0e1116;color:#d6e2ef;border-radius:12px;font:14px/1.6 var(--mono);padding:14px 18px;text-align:left;box-shadow:0 10px 30px #0002;position:relative;max-width:640px;margin:0 auto 18px;border:1px solid #232933}
+.term .bar{display:flex;gap:6px;margin-bottom:10px}.term .bar i{width:10px;height:10px;border-radius:50%;background:#3a4150;display:block}.term .c{color:#7d8799}
+.copy{position:absolute;top:10px;right:12px;background:#222833;color:#cfd8e3;border:1px solid #333b48;border-radius:6px;font:12px var(--sans);padding:3px 8px;cursor:pointer}
+.facts{color:var(--mute);font-size:14px;display:flex;gap:22px;justify-content:center;flex-wrap:wrap}.facts b{color:var(--ink)}
+.shot{margin:40px auto 0;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 60px #0001;background:var(--card)}
+section{padding:64px 0;border-top:1px solid var(--line)}
+h2{font-size:34px;letter-spacing:-.01em;margin:0 0 8px}.sub{color:var(--mute);margin:0 0 30px;max-width:700px}
+.tour{position:relative;aspect-ratio:16/10;border-radius:16px;overflow:hidden;border:1px solid var(--line);box-shadow:0 20px 60px #0002}
+.tour.full{position:fixed;inset:0;z-index:200;aspect-ratio:auto;border-radius:0;border:0}
+#tourx{display:none;position:absolute;bottom:14px;right:16px;z-index:2;background:#16181d;color:#fff;border:0;border-radius:999px;padding:7px 14px;font:600 13px var(--sans);cursor:pointer;box-shadow:0 4px 14px #0004}.tour.full #tourx{display:block}
+body.fs{overflow:hidden}
+.tour iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.tourlinks{display:flex;gap:18px;margin-top:12px;color:var(--mute);font-size:14px}
+.slots{width:100%;border-collapse:collapse;font-size:15px}.slots td,.slots th{border-bottom:1px solid var(--line);padding:10px;text-align:left}.slots th{color:var(--mute);font-weight:600}
+footer{padding:40px 0;color:var(--mute);font-size:14px;border-top:1px solid var(--line)}footer a{margin-left:8px}
+.dark-only{display:none}
+@media (prefers-color-scheme:dark){.light-only{display:none}.dark-only{display:block}}
+@media (max-width:640px){h1{font-size:40px}header{flex-direction:column;gap:10px}nav{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 16px}nav a{margin-left:0;font-size:14px;white-space:nowrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span><img class="light-only" src="assets/wordmark-light.svg" height="32" alt="Open Loops"><img class="dark-only" src="assets/wordmark-dark.svg" height="32" alt="Open Loops"></span>
+    <nav><a href="#loops">How it works</a><a href="#tour">Tour</a><a href="#slots">Slots</a><a href="https://github.com/anubhavshrimal/open-loops/blob/main/SPEC.md">SPEC.md</a><a href="https://github.com/anubhavshrimal/open-loops">GitHub ★</a></nav></header>
+  <div class="hero">
+    <img src="assets/wick-sticker-96.png" width="72" alt="Wick" style="margin:0 auto">
+    <h1>Specs in, reviewed PRs out.</h1>
+    <p class="tag">Stop watching your coding agents work. Write the next Spec while Workers build the last one —
+      <span class="rot"><span>it opens the PR.</span><span>it reads your Review comments.</span><span>it keeps going while you sleep.</span><span>it never merges.</span></span></p>
+    <div class="term"><button class="copy" type="button">Copy</button><div class="bar"><i></i><i></i><i></i></div><span class="c"># tell your coding agent:</span><br><span id="setup">Set up Open Loops from https://github.com/anubhavshrimal/open-loops</span></div>
+    <p class="facts"><span><b>Runs on your machine</b></span><span><b>No agent merges</b></span><span><b>MIT</b> · v0.2 preview</span></p>
+    <div class="shot"><img class="light-only" src="assets/hero-loop-light.gif" alt="A day and a night of Tasks, compressed into 29 seconds"><img class="dark-only" src="assets/hero-loop-dark.gif" alt="A day and a night of Tasks, compressed into 29 seconds"></div>
+  </div>
+  <section id="loops"><h2>Two loops, one of them is yours</h2><p class="sub">The Worker runs its own Closed Loop: it builds, tests and reviews until the Spec is met. You stay in the Open Loop: you write Specs, you review, you merge.</p>
+    <div class="shot" style="padding:20px;margin-top:0"><img class="light-only" src="assets/two-loops-animated-light.svg" alt="Two loops"><img class="dark-only" src="assets/two-loops-animated-dark.svg" alt="Two loops"></div>
+  </section>
+  <section id="tour"><h2>One night with Open Loops</h2><p class="sub">Four Tasks at 2 PM, merged PRs at 8:30 AM. Follow the Tracker, the Workers and the messages, step by step. All Tasks and numbers are invented.</p>
+    <div class="tour" id="tourbox"><iframe id="tourf" src="tour.html?embed=1" title="Guided tour" loading="lazy"></iframe><button id="tourx" type="button" title="Exit full screen (Esc)">✕ Exit full screen</button></div>
+    <div class="tourlinks"><a id="tourfull" href="tour.html">⤢ Full screen</a><span>Keys: ← → to step, space to play</span></div>
+  </section>
+  <section id="slots"><h2>Bring your own tools</h2><p class="sub">Five Slots. Each one has a Contract. Your tool only has to meet it. Setup asks one question per Slot, each with a default.</p>
+    <table class="slots"><tr><th>Slot</th><th>Default</th><th>Other examples</th></tr>
+      <tr><td>Tracker</td><td>GitHub Issues</td><td>Markdown folder</td></tr><tr><td>Host</td><td>cron + Claude Code</td><td>Codex, KiroCrew, OpenClaw</td></tr>
+      <tr><td>Runtime</td><td>herdr-core</td><td>Herdr, tmux</td></tr><tr><td>Notifier</td><td>log file</td><td>KiroCrew, an MCP server</td></tr><tr><td>Review System</td><td>GitHub PR</td><td>Local branch</td></tr></table></section>
+  <footer>Open Loops · MIT · Built on your machine, with your tools. · <a href="https://github.com/anubhavshrimal/open-loops/blob/main/SPEC.md">SPEC.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/GLOSSARY.md">GLOSSARY.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/SETUP.md">SETUP.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/docs/design-decisions.md">Design decisions</a></footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+document.querySelector('.copy').onclick=e=>{const b=e.currentTarget;navigator.clipboard.writeText($('setup').textContent).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1500)},()=>{getSelection().selectAllChildren($('setup'))})};
+function full(on){$('tourbox').classList.toggle('full',on);document.body.classList.toggle('fs',on);if(on)$('tourf').focus()}
+$('tourfull').onclick=e=>{e.preventDefault();full(true)};$('tourx').onclick=()=>full(false);
+addEventListener('keydown',e=>{if(e.key==='Escape')full(false)});
+addEventListener('message',e=>{if(e.source===$('tourf').contentWindow&&e.data==='ol-exit-full')full(false)});
+</script>
+</body>
+</html>
