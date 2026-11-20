@@ -570,6 +570,22 @@ class ExamplePartsTest(unittest.TestCase):
         finally:
             subprocess.run(["tmux", "kill-server"], env=env)
 
+    @unittest.skipUnless(shutil.which("tmux"), "tmux is not installed")
+    def test_tmux_read_with_an_empty_screen_succeeds(self):
+        # A Worker that has printed nothing yet (just spawned) is settled with no lines, not a read failure.
+        tmp = self.dir / "t"
+        tmp.mkdir()
+        env = dict(os.environ, TMUX_TMPDIR=str(tmp))
+        env.pop("TMUX", None)
+        command = self.read("runtime", "tmux", "workers")
+        subprocess.run(["tmux", "new-session", "-d", "-s", "ol-y", "sleep", "30"], env=env, check=True)
+        try:
+            code, out, _, _ = cc.run_sh(command, self.dir, 10, env)
+            self.assertEqual(code, 0)
+            self.assertIn(b"== ol-y settled", out)
+        finally:
+            subprocess.run(["tmux", "kill-server"], env=env)
+
     def test_cron_change_check_line_runs_the_same_cycle_command(self):
         for host in ("cron-claude.md", "cron-codex.md"):
             text = (REPO / "adapters" / "host" / host).read_text()

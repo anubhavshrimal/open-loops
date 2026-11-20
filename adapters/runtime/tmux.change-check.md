@@ -18,7 +18,7 @@ printf '%s\n' "$s" | grep '^ol-' | sort | while read -r name; do
     printf '== %s working\n' "$name"
   else
     printf '== %s settled\n' "$name"
-    printf '%s\n' "$out" | grep -v '^[[:space:]]*$'
+    printf '%s\n' "$out" | grep -v '^[[:space:]]*$' || true
   fi
 done
 ```
