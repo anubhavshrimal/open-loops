@@ -52,7 +52,7 @@ def notice():
            "third-party software below from its upstream source, on the Owner's machine, under",
            "its own license. Each is a separate project.", ""]
     for s in sources:
-        out.append(f"{s['name']} ({s['repo']})")
+        out.append(", ".join(f"{r['name']} ({r['repo']})" for r in [s] + s.get("also", [])))
         if s["copyright"]:
             out.append(s["copyright"])
         out.append(f"License: {s['license']}")
@@ -66,7 +66,8 @@ def credits():
     for s in sources:
         how = s["used_for"]
         how += " Installed by setup from upstream." if s["skills"] else " Not installed by setup."
-        out.append(f"| [{s['name']}]({s['repo']}) | {s['author']} | {s['license']} | {how} |")
+        links = ", ".join(f"[{r['name']}]({r['repo']})" for r in [s] + s.get("also", []))
+        out.append(f"| {links} | {s['author']} | {s['license']} | {how} |")
     return "\n".join(out)
 
 

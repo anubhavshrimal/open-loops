@@ -16,13 +16,9 @@ Copyright (c) 2025 Jesse Vincent
 License: MIT
 Use: The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`.
 
-herdrdev/herdr (https://github.com/herdrdev/herdr)
+herdrdev/herdr-core (https://github.com/herdrdev/herdr-core), herdrdev/herdr (https://github.com/herdrdev/herdr)
 License: Apache-2.0
-Use: An alternative Runtime (the Herdr TUI). The Owner installs the `herdr` program from its own docs.
-
-herdrdev/herdr-core (https://github.com/herdrdev/herdr-core)
-License: Apache-2.0
-Use: The recommended Runtime. The Owner installs the `hc` program (herdr-core) from its own docs.
+Use: herdr-core (`hc`) is the recommended Runtime; the Herdr TUI (`herdr`) is an alternative Runtime. The Owner installs the program from its own docs.
 
 tobi/qmd (https://github.com/tobi/qmd)
 Copyright (c) 2024-2026 Tobi Lutke

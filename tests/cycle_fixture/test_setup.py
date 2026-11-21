@@ -85,6 +85,8 @@ class ThirdPartyDataTest(unittest.TestCase):
         for s in SOURCES:
             for field in ("name", "repo", "author", "license", "copyright", "optional", "used_for", "skills", "install"):
                 self.assertIn(field, s, s.get("name"))
+            for more in s.get("also", []):
+                self.assertEqual(set(more), {"name", "repo"}, s["name"])
             if s["skills"]:
                 self.assertTrue(s["install"].get("npx", {}).get("source"), f"{s['name']}: a source with skills needs an npx route")
 
