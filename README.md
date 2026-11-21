@@ -79,21 +79,6 @@ The states, the Cycle and the invariants are in [`SPEC.md`](SPEC.md). The words 
 
 <sub>Illustrative Tasks. A train has the color of its state. No motion: still version (<a href="assets/state-map-still-light.png">light</a>, <a href="assets/state-map-still-dark.png">dark</a>). The rules are in <a href="SPEC.md">SPEC.md</a>.</sub>
 
-## See it run
-
-<details>
-<summary><b>Watch one Task go through the whole Open Loop</b> (terminal re-enactment, about 110 seconds, captions in the clip)</summary>
-
-<br>
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/terminal-demo-dark.gif">
-  <source media="(prefers-color-scheme: light)" srcset="assets/terminal-demo-light.gif">
-  <img alt="Terminal re-enactment with burned-in captions. You tell your coding agent: Set up Open Loops. Setup asks one question at a time; the Host question lists Claude Code, Codex, KiroCrew and OpenClaw. The sample Task Add hello.txt goes to Ready. At 10:30 a Cycle spawns the Worker ol-hello-file in its own git worktree in a Herdr pane. The Worker builds, tests and reviews, then opens draft PR #2 itself and moves the Task to In Review. At 11:00 the next Cycle only sends in_review and writes the Cycle log. You leave a Review comment; a comment from a bot on the PR is skipped because bots are not trusted authors. At 11:30 the next Cycle respawns the Worker in the same worktree; it adds a commit, pushes and replies. You mark the draft PR ready and merge it; you do not approve your own PR. At 12:30 the next Cycle moves the Task to Done and sends done. No agent merges." src="assets/terminal-demo-light.gif" width="100%">
-</picture>
-
-<sub>A re-enactment with cron + <code>claude -p</code> as the Host, the Herdr TUI as the Runtime, GitHub Issues, a log file and GitHub PR. Task #1, PR #2 and the repo <code>you/my-app</code> are illustrative. Time is sped up; the clock shows the time of day in the story. The commands and log lines follow <a href="core/orchestrator.md"><code>core/orchestrator.md</code></a>, <a href="core/worker-rules.md"><code>core/worker-rules.md</code></a> and the <a href="adapters/"><code>adapters/</code></a> notes files; the wording follows a real <a href="tests/cycle_fixture/README.md">Cycle fixture</a> run.</sub>
-</details>
-
 ## Slots
 
 Each Slot is a place where setups differ. Its Contract (in [`adapters/`](adapters/README.md)) lists what your tool must do. A notes file in `~/.openloops/` tells the Orchestrator which tool to use and how.
@@ -167,8 +152,7 @@ Open Loops installs these projects from their upstream source. None of their fil
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
 | [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
-| [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | An alternative Runtime (the Herdr TUI). The Owner installs the `herdr` program from its own docs. Not installed by setup. |
-| [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core) | The Herdr authors | Apache-2.0 | The recommended Runtime. The Owner installs the `hc` program (herdr-core) from its own docs. Not installed by setup. |
+| [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core), [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | herdr-core (`hc`) is the recommended Runtime; the Herdr TUI (`herdr`) is an alternative Runtime. The Owner installs the program from its own docs. Not installed by setup. |
 | [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->
 
