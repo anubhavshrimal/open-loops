@@ -5,7 +5,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Open Loops — Specs in, reviewed PRs out</title>
+<title>Open Loops — You stop being the loop</title>
 <meta name="description" content="Open Loops runs coding agents on your Tasks while you write the next Spec. Workers open PRs, read your Review comments and never merge.">
 <link rel="icon" type="image/png" href="assets/wick-sticker-96.png">
 <style>
@@ -37,6 +37,8 @@ body.fs{overflow:hidden}
 .tour iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .tourlinks{display:flex;gap:18px;margin-top:12px;color:var(--mute);font-size:14px}
 .slots{width:100%;border-collapse:collapse;font-size:15px}.slots td,.slots th{border-bottom:1px solid var(--line);padding:10px;text-align:left}.slots th{color:var(--mute);font-weight:600}
+.faq h3{font-size:18px;margin:22px 0 6px}.faq p{margin:0;max-width:720px;color:var(--ink)}.faq p a{color:var(--teal)}
+.star{text-align:center;color:var(--mute);font-size:15px;margin:36px 0 28px}.star a{color:var(--ink);font-weight:600}
 footer{padding:40px 0;color:var(--mute);font-size:14px;border-top:1px solid var(--line)}footer a{margin-left:8px}
 .dark-only{display:none}
 @media (prefers-color-scheme:dark){.light-only{display:none}.dark-only{display:block}}
@@ -47,12 +49,12 @@ footer{padding:40px 0;color:var(--mute);font-size:14px;border-top:1px solid var(
 <div class="wrap">
   <header>
     <span><img class="light-only" src="assets/wordmark-light.svg" height="32" alt="Open Loops"><img class="dark-only" src="assets/wordmark-dark.svg" height="32" alt="Open Loops"></span>
-    <nav><a href="#loops">How it works</a><a href="#tour">Tour</a><a href="#slots">Slots</a><a href="https://github.com/anubhavshrimal/open-loops/blob/main/SPEC.md">SPEC.md</a><a href="https://github.com/anubhavshrimal/open-loops">GitHub ★</a></nav></header>
+    <nav><a href="#loops">How it works</a><a href="#tour">Tour</a><a href="#slots">Slots</a><a href="#faq">FAQ</a><a href="https://github.com/anubhavshrimal/open-loops/blob/main/SPEC.md">SPEC.md</a><a href="https://github.com/anubhavshrimal/open-loops">GitHub ★</a></nav></header>
   <div class="hero">
     <img src="assets/wick-sticker-96.png" width="72" alt="Wick" style="margin:0 auto">
-    <h1>Specs in, reviewed PRs out.</h1>
-    <p class="tag">Stop watching your coding agents work. Write the next Spec while Workers build the last one —
-      <span class="rot"><span>it opens the PR.</span><span>it reads your Review comments.</span><span>it keeps going while you sleep.</span><span>it never merges.</span></span></p>
+    <h1>You stop being the loop.</h1>
+    <p class="tag">You write the Spec and you review the result. Open Loops starts the coding agent and keeps the work moving between them —
+      <span class="rot"><span>it opens the PR.</span><span>it reads your Review comments.</span><span>it keeps going while you are away.</span><span>it never merges.</span></span></p>
     <div class="term"><button class="copy" type="button">Copy</button><div class="bar"><i></i><i></i><i></i></div><span class="c"># tell your coding agent:</span><br><span id="setup">Set up Open Loops from https://github.com/anubhavshrimal/open-loops</span></div>
     <p class="facts"><span><b>Runs on your machine</b></span><span><b>No agent merges</b></span><span><b>MIT</b> · v0.2 preview</span></p>
     <div class="shot"><img class="light-only" src="assets/hero-loop-light.gif" alt="A day and a night of Tasks, compressed into 29 seconds"><img class="dark-only" src="assets/hero-loop-dark.gif" alt="A day and a night of Tasks, compressed into 29 seconds"></div>
@@ -60,7 +62,7 @@ footer{padding:40px 0;color:var(--mute);font-size:14px;border-top:1px solid var(
   <section id="loops"><h2>Two loops, one of them is yours</h2><p class="sub">The Worker runs its own Closed Loop: it builds, tests and reviews until the Spec is met. You stay in the Open Loop: you write Specs, you review, you merge.</p>
     <div class="shot" style="padding:20px;margin-top:0"><img class="light-only" src="assets/two-loops-animated-light.svg" alt="Two loops"><img class="dark-only" src="assets/two-loops-animated-dark.svg" alt="Two loops"></div>
   </section>
-  <section id="tour"><h2>One night with Open Loops</h2><p class="sub">Four Tasks at 2 PM, merged PRs at 8:30 AM. Follow the Tracker, the Workers and the messages, step by step. All Tasks and numbers are invented.</p>
+  <section id="tour"><h2>See it work</h2><p class="sub">Four Tasks, from hand-off to merged PRs. Follow the Tracker, the Workers and the messages, step by step. All Tasks and numbers are invented.</p>
     <div class="tour" id="tourbox"><iframe id="tourf" src="tour.html?embed=1" title="Guided tour" loading="lazy"></iframe><button id="tourx" type="button" title="Exit full screen (Esc)">✕ Exit full screen</button></div>
     <div class="tourlinks"><a id="tourfull" href="tour.html">⤢ Full screen</a><span>Keys: ← → to step, space to play</span></div>
   </section>
@@ -68,6 +70,12 @@ footer{padding:40px 0;color:var(--mute);font-size:14px;border-top:1px solid var(
     <table class="slots"><tr><th>Slot</th><th>Default</th><th>Other examples</th></tr>
       <tr><td>Tracker</td><td>GitHub Issues</td><td>Markdown folder</td></tr><tr><td>Host</td><td>cron + Claude Code</td><td>Codex, KiroCrew, OpenClaw</td></tr>
       <tr><td>Runtime</td><td>herdr-core</td><td>Herdr, tmux</td></tr><tr><td>Notifier</td><td>log file</td><td>KiroCrew, an MCP server</td></tr><tr><td>Review System</td><td>GitHub PR</td><td>Local branch</td></tr></table></section>
+  <section id="faq" class="faq"><h2>Questions people ask</h2>
+    <h3>Who is it for?</h3><p>Anyone who already uses a coding agent: developers, scientists, and people in other roles who prototype an idea, research a question or explore. A Task can end in a PR, a findings report, a document, or a note on the Task.</p>
+    <h3>Why not one agent session?</h3><p>For one quick change, use one session. It is faster. Open Loops helps when you have several Tasks, Tasks that depend on each other, or a PR that needs more than one Review round. Then all your feedback goes in one place, the work continues while you do other work, and each Task has a written record.</p>
+    <h3>How is it different from OpenAI Symphony?</h3><p><a href="https://github.com/openai/symphony">Symphony</a> is the closest design: it also turns tracker work into isolated agent runs from a written spec, and Open Loops borrows its repo layout and the idea of a <code>SPEC.md</code>. Symphony is a deterministic service on the Codex app-server protocol, and its agents can land the change. Open Loops runs any coding agent through a Contract, owns the review loop after the PR, never lets an agent merge, gates Tasks on their dependencies, and has Exploration Specs. Symphony is ahead on deterministic scheduling (retries, back-off, stall detection), a dashboard, and adoption.</p>
+  </section>
+  <p class="star">If Open Loops is useful to you, <a href="https://github.com/anubhavshrimal/open-loops">give it a ★ on GitHub</a>. It helps other people find it.</p>
   <footer>Open Loops · MIT · Built on your machine, with your tools. · <a href="https://github.com/anubhavshrimal/open-loops/blob/main/SPEC.md">SPEC.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/GLOSSARY.md">GLOSSARY.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/SETUP.md">SETUP.md</a> <a href="https://github.com/anubhavshrimal/open-loops/blob/main/docs/design-decisions.md">Design decisions</a></footer>
 </div>
 <script>

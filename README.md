@@ -4,9 +4,9 @@
 </picture>
 <img alt="Wick, the Open Loops mascot: a small lantern robot" src="assets/wick-sticker-96.png" height="48">
 
-### Specs in, reviewed PRs out.
+### You stop being the loop.
 
-**Stop watching your coding agents work.** Write the next Spec while Workers build the last one. Review PRs as they arrive. And it keeps going while you sleep.
+**You write the Spec and you review the result.** Open Loops starts the coding agent, keeps the work moving through builds, tests and your Review comments, and tells you when it needs you. Specs in, reviewed PRs out.
 
 <p align="center">
   <picture>
@@ -25,8 +25,8 @@ Open Loops takes Tasks from your Tracker and gives each one to a coding-agent Wo
 - **It runs on your machine,** with your tools for each Slot. Nothing runs on a server of this project.
 
 <p align="center">
-  <a href="https://youtu.be/BWgLZJAIL9A"><img src="assets/tour-video.jpg" width="560" alt="Watch the guided tour on YouTube: one night with Open Loops, 2 minutes 38 seconds"></a><br>
-  <sub>▶ <a href="https://youtu.be/BWgLZJAIL9A">Watch one night with Open Loops</a> (2:38), or step through the <a href="https://anubhavshrimal.github.io/open-loops/tour.html">interactive tour</a> at your own pace.</sub>
+  <a href="https://youtu.be/BWgLZJAIL9A"><img src="assets/tour-video.jpg" width="560" alt="Watch the guided tour on YouTube, 2 minutes 38 seconds"></a><br>
+  <sub>▶ <a href="https://youtu.be/BWgLZJAIL9A">Watch the guided tour</a> (2:38), or step through the <a href="https://anubhavshrimal.github.io/open-loops/tour.html">interactive tour</a> at your own pace.</sub>
 </p>
 
 > [!WARNING]
@@ -157,6 +157,8 @@ Open Loops installs these projects from their upstream source. None of their fil
 <!-- credits:end -->
 
 The wiki module follows Andrej Karpathy's ["LLM Wiki" pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). The Exploration Worker's experiment loop follows Andrej Karpathy's [autoresearch](https://github.com/karpathy/autoresearch). The repo layout and the idea of a `SPEC.md` next to the code come from [openai/symphony](https://github.com/openai/symphony). The fonts in the images are Inter and JetBrains Mono (SIL Open Font License 1.1), drawn as outlines.
+
+If Open Loops is useful to you, <a href="https://github.com/anubhavshrimal/open-loops">give it a ★ on GitHub</a>. It helps other people find it.
 
 ## License
 
