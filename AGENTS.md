@@ -11,6 +11,10 @@ Read this before you change anything in Open Loops. It is for people and coding 
 5. **No third-party skill files.** Third-party skills are installed from their source and listed in [`third-party.json`](third-party.json). Never copy them into the repo. When the list changes, run `./install-third-party.sh --notice > NOTICE` and replace each credits table with `./install-third-party.sh --credits`.
 6. **Keep today's behavior where it works.** Fix a real problem; do not redesign, consolidate or add a feature that no Task asks for.
 
+## Private context
+
+If an `AGENTS.local.md` file is in the repo root, read it before you start. It holds the Owner's private context for this machine. Git ignores it. Never commit it, and never copy its content into a committed file.
+
 ## Where things are
 
 | To change | Edit | And also |

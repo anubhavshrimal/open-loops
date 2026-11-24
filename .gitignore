@@ -4,3 +4,7 @@
 # Claude Code local files and worktrees
 .claude/
 __pycache__/
+
+# Private local context files (see AGENTS.md)
+AGENTS.local.md
+CLAUDE.local.md
