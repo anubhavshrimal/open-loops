@@ -11,11 +11,6 @@ Copyright (c) 2026 Matt Pocock
 License: MIT
 Use: The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`.
 
-obra/superpowers (https://github.com/obra/superpowers)
-Copyright (c) 2025 Jesse Vincent
-License: MIT
-Use: The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`.
-
 herdrdev/herdr-core (https://github.com/herdrdev/herdr-core), herdrdev/herdr (https://github.com/herdrdev/herdr)
 License: Apache-2.0
 Use: herdr-core (`hc`) is the recommended Runtime; the Herdr TUI (`herdr`) is an alternative Runtime. The Owner installs the program from its own docs.

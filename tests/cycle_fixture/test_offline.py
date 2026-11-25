@@ -135,6 +135,7 @@ class SandboxTest(unittest.TestCase):
     def test_build_and_test_command_passes_on_main(self):
         result = subprocess.run(["sh", "check.sh"], cwd=self.sb.project, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn(run_fixture.CHECK_OK, result.stdout)
 
 
 class ExplorationSandboxTest(unittest.TestCase):

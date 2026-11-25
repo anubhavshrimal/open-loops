@@ -47,6 +47,7 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 EXAMPLES = REPO / "examples"
 CHECK_SH = HERE / "fixtures" / "check.sh"
+CHECK_OK = "every .txt file is non-empty and ends with a newline"  # what check.sh prints when it passes
 sys.path.insert(0, str(HERE))
 
 from schema_check import schema_errors  # noqa: E402
@@ -687,6 +688,9 @@ def scenario_build(args, sb=None):
     reach_in_review(s, slug)
     hello = git("show", f"ol-{slug}:hello.txt", cwd=s.sb.project, check=False).stdout
     s.check("hello.txt on the branch has the one line", hello == "Hello from Open Loops.\n", repr(hello))
+    comments = task_comments(s.sb, slug)
+    s.check("a Tracker comment quotes the output of the build and test command", any(CHECK_OK in c for c in comments),
+            f"{len(comments)} comments")
     return s.finish()
 
 

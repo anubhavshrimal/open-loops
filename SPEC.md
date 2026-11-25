@@ -116,7 +116,8 @@ The Cycle itself is the same with or without the Change check.
 ## 7. The Worker
 
 - It reads `tracker.md` and `review.md`, then its Spec, then works in a Closed Loop until the goal is met or it is truly blocked.
-- **Completion steps:** commit → the project's build and test command → the review skill that `review.md` names (default `code-review` from mattpocock/skills) → publish (only as `review.md` says: a push, an upload, or nothing) → open the PR (draft or ready, per `review.md`) → verify → a Tracker comment with the PR reference → move the Task to In Review → update the Spec's Status checklist.
+- **Completion steps:** commit → the project's build and test command → the review skill that `review.md` names (default `code-review` from mattpocock/skills) → publish (only as `review.md` says: a push, an upload, or nothing) → open the PR (draft or ready, per `review.md`) → verify (run the build, the tests and the Acceptance Criteria checks again, and read the output) → a Tracker comment with the PR reference and the quoted output → move the Task to In Review → update the Spec's Status checklist.
+- **Work discipline:** it verifies before it marks a Task done, finds the root cause of a bug before it changes code, and checks that each Review comment is technically right before it acts on it.
 - On Review comments: a Review round. The fix is new commits on the same branch, or an amended commit, as the `Review rounds` line of `review.md` says, then a reply to each Review comment.
 - If blocked: a Tracker comment with the reason, then move the Task to Blocked.
 - It writes the Tracker itself (comments, state). The Orchestrator verifies and corrects.

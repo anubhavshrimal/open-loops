@@ -151,7 +151,6 @@ Open Loops installs these projects from their upstream source. None of their fil
 | Source | Author | License | How Open Loops uses it |
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
-| [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
 | [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core), [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | herdr-core (`hc`) is the recommended Runtime; the Herdr TUI (`herdr`) is an alternative Runtime. The Owner installs the program from its own docs. Not installed by setup. |
 | [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->

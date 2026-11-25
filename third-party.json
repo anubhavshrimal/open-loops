@@ -16,20 +16,6 @@
       }
     },
     {
-      "name": "obra/superpowers",
-      "repo": "https://github.com/obra/superpowers",
-      "author": "Jesse Vincent",
-      "license": "MIT",
-      "copyright": "Copyright (c) 2025 Jesse Vincent",
-      "optional": false,
-      "used_for": "The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`.",
-      "skills": ["verification-before-completion", "systematic-debugging", "receiving-code-review", "subagent-driven-development"],
-      "install": {
-        "claude": {"marketplace": "obra/superpowers-marketplace", "plugin": "superpowers@superpowers-marketplace"},
-        "npx": {"source": "obra/superpowers"}
-      }
-    },
-    {
       "name": "herdrdev/herdr-core",
       "repo": "https://github.com/herdrdev/herdr-core",
       "also": [{"name": "herdrdev/herdr", "repo": "https://github.com/herdrdev/herdr"}],

@@ -163,7 +163,7 @@ Do not make `state.json`: the first Cycle makes it.
 
 ## 7. Install the third-party skills
 
-The core uses skills from other projects. They are never copied into the Open Loops repo. The installer gets them from their upstream source, with one route for each agent: the Claude Code plugin marketplace for Claude Code (a plugin is installed whole, so it can bring more skills than the core uses), and `npx skills add` with an explicit skill list for Codex and other agents.
+The core uses third-party skills. They are never copied into the Open Loops repo. The installer gets them from their upstream source, with one route for each agent: the Claude Code plugin marketplace for Claude Code (a plugin is installed whole, so it can bring more skills than the core uses), and `npx skills add` with an explicit skill list for Codex and other agents.
 
 Before you run the installer, show the Owner the table below: each source, the skills that the core uses, and for Claude Code the plugin that brings them. Say that a plugin installs whole, at user scope: it can add more skills and hooks to all of the Owner's Claude Code sessions. Ask one yes/no question, default yes. With yes, run:
 
@@ -184,7 +184,6 @@ What it installs, and the credits (made from [`third-party.json`](third-party.js
 | Source | Author | License | How Open Loops uses it |
 |---|---|---|---|
 | [mattpocock/skills](https://github.com/mattpocock/skills) | Matt Pocock | MIT | The default review skill `code-review` in the Worker's completion steps. Optional modules: the refine skills `spec-task` and `spec-exploration` are derived in part from its skills (MIT, attribution in each `SKILL.md`) and use its `domain-modeling`; the capture rules name its `wayfinder`. Installed by setup from upstream. |
-| [obra/superpowers](https://github.com/obra/superpowers) | Jesse Vincent | MIT | The Worker rules use `verification-before-completion`, `systematic-debugging`, `receiving-code-review` and `subagent-driven-development`. Installed by setup from upstream. |
 | [herdrdev/herdr-core](https://github.com/herdrdev/herdr-core), [herdrdev/herdr](https://github.com/herdrdev/herdr) | The Herdr authors | Apache-2.0 | herdr-core (`hc`) is the recommended Runtime; the Herdr TUI (`herdr`) is an alternative Runtime. The Owner installs the program from its own docs. Not installed by setup. |
 | [tobi/qmd](https://github.com/tobi/qmd) | Tobi Lutke | MIT | Optional local search for the wiki module. The Owner installs the `qmd` program from its own docs. Not installed by setup. |
 <!-- credits:end -->

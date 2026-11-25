@@ -90,9 +90,9 @@ class ThirdPartyDataTest(unittest.TestCase):
             if s["skills"]:
                 self.assertTrue(s["install"].get("npx", {}).get("source"), f"{s['name']}: a source with skills needs an npx route")
 
-    def test_core_requires_mattpocock_and_superpowers(self):
+    def test_core_requires_mattpocock(self):
         required = {s["name"] for s in SOURCES if not s["optional"]}
-        self.assertEqual(required, {"mattpocock/skills", "obra/superpowers"})
+        self.assertEqual(required, {"mattpocock/skills"})
 
     def test_notice_and_credits_match_the_data_file(self):
         result = subprocess.run([str(INSTALLER), "--check"], capture_output=True, text=True)
@@ -170,9 +170,9 @@ class InstallerTest(unittest.TestCase):
 
     def test_a_plugin_in_a_project_scope_does_not_count(self):
         (self.bin / "claude").write_text(STUB_CLAUDE.replace(
-            '"plugin list --json")', '"plugin list --json") echo \'[{"id": "superpowers@x", "scope": "project"}]\'; exit 0 ;; "never")'))
+            '"plugin list --json")', '"plugin list --json") echo \'[{"id": "mattpocock-skills@x", "scope": "project"}]\'; exit 0 ;; "never")'))
         self.run_installer(OPENLOOPS_NPX_AGENTS="")
-        self.assertIn("superpowers@superpowers-marketplace", (self.home / "plugins.txt").read_text())
+        self.assertIn("mattpocock-skills@mattpocock", (self.home / "plugins.txt").read_text())
 
     def test_no_codex_and_no_npx_agents_works_on_claude_alone(self):
         (self.bin / "codex").unlink()

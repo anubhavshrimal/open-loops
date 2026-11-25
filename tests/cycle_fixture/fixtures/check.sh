@@ -8,5 +8,5 @@ for f in $(git ls-files '*.txt'); do
     status=1
   fi
 done
-[ "$status" -eq 0 ] && echo "ok"
+[ "$status" -eq 0 ] && echo "ok: every .txt file is non-empty and ends with a newline"
 exit "$status"
